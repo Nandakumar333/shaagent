@@ -1,0 +1,11 @@
+{
+  "name": "shaagent-monorepo",
+  "private": true,
+  "workspaces": ["packages/cli"],
+  "scripts": {
+    "build": "npm run build --workspace=packages/cli",
+    "dev": "npm run dev --workspace=packages/cli",
+    "test": "npm run test --workspace=packages/cli",
+    "lint": "npm run lint --workspace=packages/cli"
+  }
+}
