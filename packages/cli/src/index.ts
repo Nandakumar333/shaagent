@@ -14,7 +14,7 @@ const program = new Command();
 program
   .name('shaagent')
   .description('Scaffold production-grade multi-agent AI systems into any repository')
-  .version('0.1.0');
+  .version('0.1.1');
 
 program.addCommand(initCommand());
 program.addCommand(skillCommand());
