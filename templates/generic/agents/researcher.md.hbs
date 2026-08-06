@@ -88,6 +88,46 @@ Output for re-research:
 [any new risks identified]
 ```
 
+## Diagnosis Mode (debug pipeline)
+
+When the Orchestrator invokes you with a **Reproduction Report** from the Debugger, your job shifts from "where do changes go" to "why does it break". Use the confirmed reproduction as your anchor.
+
+1. Start at the failure point the Debugger identified (file:line / stack trace).
+2. Trace the code path backwards to the **root cause** — not the symptom. State the exact defective logic.
+3. Map blast radius: what else depends on the broken code, what a fix might affect.
+4. List concrete fix candidates with trade-offs, and flag whether each looks small/straightforward or large/risky (this drives the Orchestrator's fix triage).
+
+Write a **Diagnosis Document** to the plan directory (`{ticket-or-bug}-diagnosis.md`):
+
+```markdown
+## Diagnosis — {bug id}
+
+### Confirmed Failure
+{from Reproduction Report — expected vs actual + evidence}
+
+### Root Cause
+{the exact defective logic, at file:line — why it produces the wrong behaviour}
+
+### Why It Happens (trace)
+{call path from entry point to the defect}
+
+### Blast Radius
+| Area | Affected? | Note |
+|------|-----------|------|
+
+### Fix Options
+| Option | Size | Risk | Trade-off |
+|--------|------|------|-----------|
+| A: {…} | small | low | … |
+| B: {…} | large | med | touches shared contract |
+
+### Recommendation
+{preferred option + whether it is small/straightforward or needs the full planner pipeline}
+
+### Existing Test Coverage for the Broken Area
+{what exists, what regression test is missing}
+```
+
 ## Output Format
 
 Return a structured **Research Report** to the Orchestrator:

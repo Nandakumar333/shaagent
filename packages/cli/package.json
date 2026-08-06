@@ -1,12 +1,14 @@
 {
   "name": "shaagent",
-  "version": "0.1.1",
+  "version": "0.2.1",
   "description": "Scaffold production-grade multi-agent AI systems into any repository",
   "bin": {
     "shaagent": "./dist/index.js"
   },
   "main": "./dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc && node scripts/bundle.js",
     "dev": "ts-node src/index.ts",
@@ -40,7 +42,15 @@
     "@vitest/coverage-v8": "^1.6.0",
     "esbuild": "^0.21.0"
   },
-  "keywords": ["ai", "agent", "multi-agent", "opencode", "claude", "copilot", "scaffold"],
+  "keywords": [
+    "ai",
+    "agent",
+    "multi-agent",
+    "opencode",
+    "claude",
+    "copilot",
+    "scaffold"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"

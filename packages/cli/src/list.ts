@@ -16,6 +16,7 @@ export function listCommand(): Command {
       return;
     }
     console.log(chalk.cyan(`\nPlatform: ${config.platform}`));
+    console.log(chalk.cyan(`Scope:    ${config.scope ?? 'project'}`));
     console.log(chalk.cyan(`Project:  ${config.project?.name}`));
     console.log(chalk.white('\nCore Agents:'));
     config.agents?.core?.forEach((a: string) => console.log(`  · ${a}`));

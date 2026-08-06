@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-31
+
+### Added
+- **Three new AI coding platforms** (now 9 total):
+  - GitHub Copilot CLI (`.github/agents/*.agent.md`, global `~/.copilot/agents/`)
+  - Windsurf (`.windsurf/rules/*.md`, workflows in `.windsurf/workflows/`)
+  - Gemini CLI (`GEMINI.md` + `.gemini/agents/*.md` via `@`-imports)
+- **Install scope** — choose where agents/skills land:
+  - `--project` (default) writes into the current repository (committed with the code).
+  - `--global` writes once into the user's home directory (applies to every project).
+  - Interactive scope prompt when neither flag is passed; `shaagent list` now shows the scope.
+- **Debugger** core agent — reproduces a reported bug in a throwaway setup, confirms the failure, then deletes the temp files. Drives a dedicated bug/debug lifecycle (Debugger → Researcher root-cause → small fix or full pipeline). Included in the default core set.
+- **CI/CD prompt** during `shaagent init` (default `GitHub Actions`); value flows into generated agent context.
+- Expanded interactive choices: languages now include JavaScript, Go, and Java; frameworks now include Angular, Vue, Spring Boot, and Express.
+- Platform caveats surfaced during init (e.g. GitHub Copilot IDE has no official global-instructions file; Windsurf documents only a single global rules file).
+
+### Changed
+- Centralized package-resource resolution in `engine/paths.ts` — templates and skills resolve correctly in both development (monorepo) and bundled (`dist/`) npm installs.
+- Per-platform plan/review/memory directories and root instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) generated for the new platforms.
+
+## [0.1.2] - 2026-07-25
+
+### Fixed
+- Skills now install to project-local directory (`.opencode/skills/`, `.claude/skills/`) instead of global home directory. Previously, selecting skills during `shaagent init` would write them to `~/.config/opencode/skills/` where they were invisible in the project.
+
 ## [0.1.0] - 2026-07-25
 
 ### Added
@@ -36,5 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Input validation for skill names (path traversal protection).
 - No network calls, no user data collection, no secrets handling.
 
-[Unreleased]: https://github.com/nandakumar333/shaagent/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/nandakumar333How to depl/shaagent/releases/tag/v0.1.0
+[Unreleased]: https://github.com/nandakumar333/shaagent/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nandakumar333/shaagent/compare/v0.1.2...v0.2.0
+[0.1.2]: https://github.com/nandakumar333/shaagent/compare/v0.1.0...v0.1.2
+[0.1.0]: https://github.com/nandakumar333/shaagent/releases/tag/v0.1.0

@@ -31,6 +31,7 @@ describe('engine/template — renderAgents', () => {
   function makeAnswers(platform: Platform): InitAnswers {
     return {
       platform,
+      scope: 'project',
       projectName: 'test-project',
       language: ['typescript'],
       framework: ['nextjs'],

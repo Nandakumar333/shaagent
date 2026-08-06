@@ -27,6 +27,7 @@ describe('engine/manifest', () => {
 
   const mockAnswers: InitAnswers = {
     platform: 'opencode',
+    scope: 'project',
     projectName: 'test-project',
     language: ['typescript', 'python'],
     framework: ['nextjs', 'fastapi'],

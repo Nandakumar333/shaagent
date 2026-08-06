@@ -18,9 +18,10 @@ pip install shaagent && shaagent init
 `shaagent init` asks you three questions and then writes a complete multi-agent system
 into your repository, tailored to your chosen AI coding platform:
 
-1. Which AI platform? (OpenCode, Claude Code, GitHub Copilot, Codex, Cursor, Continue)
-2. Which agents? (core set pre-selected, optional agents opt-in)
-3. Which skills to install? (graphify, caveman, tdd, security-scan, arch-review)
+1. Install scope? (project — committed with the repo, or global — once for this user)
+2. Which AI platform? (9 supported — see table below)
+3. Which agents? (core set pre-selected, optional agents opt-in)
+4. Which skills to install? (graphify, caveman, review, tdd, security-scan, arch-review)
 
 ---
 
@@ -32,14 +33,16 @@ The Orchestrator is the single entry point. You talk to it; it talks to sub-agen
 It owns the workflow, routes tasks, and synthesises results.
 
 ```
-User → Orchestrator → [Researcher → Planner → Dev → QA → Reviewer → Reviewer-Fix] → User
+Feature: User → Orchestrator → [Researcher → Planner → Dev → QA → Reviewer → Reviewer-Fix] → User
+Bug:     User → Orchestrator → [Debugger → Researcher → (small fix: Dev+QA | large: Planner → …)] → User
 ```
 
 ### Core Sub-Agents
 
 | Agent         | Role                                                    |
 |---------------|---------------------------------------------------------|
-| Researcher    | Explore codebase, find patterns, surface constraints    |
+| Debugger      | Reproduce a reported bug in a throwaway setup, confirm the failure, then delete the temp files |
+| Researcher    | Explore codebase, find patterns, surface constraints (also does root-cause diagnosis in the debug flow) |
 | Planner       | Break requirements into ordered, testable steps         |
 | Dev           | Implement code exactly per the plan                     |
 | QA            | Write and validate tests, verify acceptance criteria    |
@@ -58,14 +61,28 @@ User → Orchestrator → [Researcher → Planner → Dev → QA → Reviewer �
 
 ## Supported Platforms
 
-| Platform         | Agent file location                        |
-|------------------|--------------------------------------------|
-| **OpenCode**     | `.opencode/agents/*.md`                    |
-| **Claude Code**  | `.claude/agents/*.md`                      |
-| GitHub Copilot   | `.github/instructions/*.instructions.md`   |
-| Codex            | `AGENTS.md`                                |
-| Cursor           | `.cursor/rules/*.mdc`                      |
-| Continue         | `.continue/prompts/*.md`                   |
+| Platform             | Agent file location                        |
+|----------------------|--------------------------------------------|
+| **OpenCode**         | `.opencode/agents/*.md`                    |
+| **Claude Code**      | `.claude/agents/*.md` + `CLAUDE.md`        |
+| GitHub Copilot       | `.github/instructions/*.instructions.md` + `AGENTS.md` |
+| GitHub Copilot CLI   | `.github/agents/*.agent.md`                |
+| Codex                | `AGENTS.md` (merged)                       |
+| Cursor               | `.cursor/rules/*.mdc`                       |
+| Continue             | `.continue/prompts/*.md`                   |
+| Windsurf             | `.windsurf/rules/*.md`                      |
+| Gemini CLI           | `.gemini/agents/*.md` + `GEMINI.md`        |
+
+### Install Scope
+
+Every install targets one of two scopes:
+
+| Scope     | Flag        | Where files land                          | Best for                        |
+|-----------|-------------|-------------------------------------------|---------------------------------|
+| Project   | `--project` | in the repo (`.claude/`, `.cursor/`, …)   | committed, per-repo agent setup |
+| Global    | `--global`  | home directory (`~/.claude/`, …)          | one setup across every project  |
+
+When neither flag is passed, `shaagent init` asks. Some platforms (GitHub Copilot IDE, Windsurf) have no official global-instructions location — shaagent surfaces a caveat and writes a best-effort path.
 
 ---
 
@@ -123,6 +140,7 @@ The Orchestrator will:
 {
   "$schema": "https://shaagent.dev/schema/v1.json",
   "platform": "opencode",
+  "scope": "project",
   "model": "github-copilot/claude-sonnet-4.6",
   "project": {
     "name": "my-platform",
@@ -132,7 +150,7 @@ The Orchestrator will:
     "cicd": "GitHub Actions"
   },
   "agents": {
-    "core": ["orchestrator", "researcher", "planner", "dev", "qa", "reviewer", "reviewer-fix"],
+    "core": ["orchestrator", "debugger", "researcher", "planner", "dev", "qa", "reviewer", "reviewer-fix"],
     "optional": ["security", "architecture-reviewer", "project-memory-creator"]
   },
   "skills": {
@@ -149,6 +167,8 @@ The Orchestrator will:
 shaagent init                          # Interactive setup
 shaagent init --yes                    # Non-interactive, all defaults
 shaagent init --platform claude-code   # Skip platform prompt
+shaagent init --project                # Install into this repo (skip scope prompt)
+shaagent init --global                 # Install into home dir for all projects
 shaagent init --dry-run                # Preview files without writing
 shaagent init --yes --dry-run          # Preview defaults without writing
 shaagent skill install tdd             # Install a skill
@@ -162,9 +182,10 @@ shaagent list                          # Show current configuration
 
 ```
 your-repo/
-├── .opencode/                  ← (or .claude/, .github/, etc.)
+├── .opencode/                  ← (or .claude/, .github/, .windsurf/, .gemini/, etc.)
 │   └── agents/
 │       ├── orchestrator.md     ← primary agent
+│       ├── debugger.md
 │       ├── researcher.md
 │       ├── planner.md
 │       ├── dev.md

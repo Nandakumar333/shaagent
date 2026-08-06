@@ -40867,15 +40867,23 @@ var lib_default = inquirer;
 
 // src/prompts.ts
 var PLATFORMS = [
-  { name: "OpenCode        \u2014 .opencode/agents/*.md", value: "opencode" },
-  { name: "Claude Code     \u2014 CLAUDE.md + .claude/agents/*.md", value: "claude-code" },
-  { name: "GitHub Copilot  \u2014 AGENTS.md + .github/instructions/*.md", value: "github-copilot" },
-  { name: "Codex (OpenAI)  \u2014 single AGENTS.md (merged)", value: "codex" },
-  { name: "Cursor          \u2014 .cursor/rules/*.mdc", value: "cursor" },
-  { name: "Continue        \u2014 .continue/prompts/*.md", value: "continue" }
+  { name: "OpenCode            \u2014 .opencode/agents/*.md", value: "opencode" },
+  { name: "Claude Code         \u2014 CLAUDE.md + .claude/agents/*.md", value: "claude-code" },
+  { name: "GitHub Copilot      \u2014 AGENTS.md + .github/instructions/*.md", value: "github-copilot" },
+  { name: "GitHub Copilot CLI  \u2014 .github/agents/*.agent.md", value: "github-copilot-cli" },
+  { name: "Codex (OpenAI)      \u2014 single AGENTS.md (merged)", value: "codex" },
+  { name: "Cursor              \u2014 .cursor/rules/*.mdc", value: "cursor" },
+  { name: "Continue            \u2014 .continue/prompts/*.md", value: "continue" },
+  { name: "Windsurf            \u2014 .windsurf/rules/*.md", value: "windsurf" },
+  { name: "Gemini CLI          \u2014 GEMINI.md + .gemini/agents/*.md", value: "gemini-cli" }
+];
+var SCOPES = [
+  { name: "Project \u2014 install into this repository (.claude/, .cursor/, ... \u2014 committed with the code)", value: "project" },
+  { name: "Global  \u2014 install once for this user (home directory \u2014 applies to every project)", value: "global" }
 ];
 var CORE_AGENTS = [
   { name: "Orchestrator  (required, always included)", value: "orchestrator", checked: true },
+  { name: "Debugger", value: "debugger", checked: true },
   { name: "Researcher", value: "researcher", checked: true },
   { name: "Planner", value: "planner", checked: true },
   { name: "Dev", value: "dev", checked: true },
@@ -40896,8 +40904,15 @@ var SKILLS = [
   { name: "security-scan \u2014 OWASP-aligned security audit for .NET", value: "security-scan", checked: false },
   { name: "arch-review   \u2014 architecture fitness functions for microservices", value: "arch-review", checked: false }
 ];
-async function prompt2(platformFlag) {
+async function prompt2(platformFlag, scopeFlag) {
   const answers = await lib_default.prompt([
+    {
+      type: "list",
+      name: "scope",
+      message: "Install agents/skills globally (this user) or just for this project?",
+      choices: SCOPES,
+      when: !scopeFlag
+    },
     {
       type: "list",
       name: "platform",
@@ -40980,6 +40995,7 @@ async function prompt2(platformFlag) {
   return {
     ...answers,
     platform: platformFlag ?? answers.platform,
+    scope: scopeFlag ?? answers.scope,
     model: answers.model || getDefaultModel(answers.platform),
     // Orchestrator is always included
     coreAgents: ["orchestrator", ...answers.coreAgents.filter((a) => a !== "orchestrator")]
@@ -40988,17 +41004,23 @@ async function prompt2(platformFlag) {
 function getDefaultModel(platform) {
   switch (platform) {
     case "opencode":
-      return "anthropic/claude-sonnet-4-20250514";
+      return "github-copilot/claude-sonnet-4.6";
     case "claude-code":
       return "claude-sonnet-4-20250514";
     case "github-copilot":
-      return "claude-sonnet-4";
+      return "claude-sonnet-4.6";
+    case "github-copilot-cli":
+      return "claude-sonnet-4.6";
     case "codex":
       return "codex-1";
     case "cursor":
-      return "claude-sonnet-4";
+      return "claude-sonnet-4.6";
     case "continue":
       return "anthropic/claude-sonnet-4-20250514";
+    case "windsurf":
+      return "claude-sonnet-4";
+    case "gemini-cli":
+      return "gemini-3.1-pro";
     default:
       return "anthropic/claude-sonnet-4-20250514";
   }
@@ -41027,54 +41049,96 @@ var import_path3 = __toESM(require("path"));
 // src/platforms/index.ts
 var import_path = __toESM(require("path"));
 var import_os = __toESM(require("os"));
-function getPlatformPaths(platform) {
-  const cwd = process.cwd();
-  const home = import_os.default.homedir();
+function getPlatformPaths(platform, scope = "project") {
+  const base = scope === "global" ? import_os.default.homedir() : process.cwd();
   const map8 = {
-    "opencode": {
-      agentsDir: import_path.default.join(cwd, ".opencode", "agents"),
-      skillsDir: import_path.default.join(home, ".config", "opencode", "skills"),
+    "opencode": scope === "global" ? {
+      agentsDir: import_path.default.join(base, ".config", "opencode", "agents"),
+      skillsDir: import_path.default.join(base, ".config", "opencode", "skills"),
+      configFile: "opencode.json",
+      extension: ".md",
+      mergedFile: false
+    } : {
+      agentsDir: import_path.default.join(base, ".opencode", "agents"),
+      skillsDir: import_path.default.join(base, ".opencode", "skills"),
       configFile: "opencode.json",
       extension: ".md",
       mergedFile: false
     },
     "claude-code": {
-      agentsDir: import_path.default.join(cwd, ".claude", "agents"),
-      skillsDir: import_path.default.join(home, ".claude", "skills"),
+      agentsDir: import_path.default.join(base, ".claude", "agents"),
+      skillsDir: import_path.default.join(base, ".claude", "skills"),
       configFile: "CLAUDE.md",
       extension: ".md",
       mergedFile: false,
-      rootInstructionFile: import_path.default.join(cwd, "CLAUDE.md")
+      rootInstructionFile: import_path.default.join(base, "CLAUDE.md")
     },
-    "github-copilot": {
-      agentsDir: import_path.default.join(cwd, ".github", "instructions"),
-      skillsDir: import_path.default.join(cwd, ".github", "copilot-skills"),
+    "github-copilot": scope === "global" ? {
+      agentsDir: import_path.default.join(base, ".config", "github-copilot", "instructions"),
+      skillsDir: import_path.default.join(base, ".config", "github-copilot", "copilot-skills"),
+      configFile: "copilot-instructions.md",
+      extension: ".instructions.md",
+      mergedFile: false,
+      rootInstructionFile: import_path.default.join(base, ".config", "github-copilot", "AGENTS.md"),
+      note: "GitHub Copilot (IDE) has no official global-instructions file \u2014 copy these into your VS Code user settings to apply them everywhere."
+    } : {
+      agentsDir: import_path.default.join(base, ".github", "instructions"),
+      skillsDir: import_path.default.join(base, ".github", "copilot-skills"),
       configFile: ".github/copilot-instructions.md",
       extension: ".instructions.md",
       mergedFile: false,
-      rootInstructionFile: import_path.default.join(cwd, "AGENTS.md")
+      rootInstructionFile: import_path.default.join(base, "AGENTS.md")
     },
-    "codex": {
-      agentsDir: cwd,
-      skillsDir: import_path.default.join(cwd, ".codex", "skills"),
+    "github-copilot-cli": {
+      agentsDir: scope === "global" ? import_path.default.join(base, ".copilot", "agents") : import_path.default.join(base, ".github", "agents"),
+      skillsDir: scope === "global" ? import_path.default.join(base, ".copilot", "skills") : import_path.default.join(base, ".github", "copilot-cli-skills"),
+      configFile: "copilot-instructions.md",
+      extension: ".agent.md",
+      mergedFile: false
+    },
+    "codex": scope === "global" ? {
+      agentsDir: import_path.default.join(base, ".codex"),
+      skillsDir: import_path.default.join(base, ".codex", "skills"),
+      configFile: "AGENTS.md",
+      extension: ".md",
+      mergedFile: true
+    } : {
+      agentsDir: base,
+      skillsDir: import_path.default.join(base, ".codex", "skills"),
       configFile: "AGENTS.md",
       extension: ".md",
       mergedFile: true
       // Codex prefers a single AGENTS.md
     },
     "cursor": {
-      agentsDir: import_path.default.join(cwd, ".cursor", "rules"),
-      skillsDir: import_path.default.join(cwd, ".cursor", "skills"),
+      agentsDir: import_path.default.join(base, ".cursor", "rules"),
+      skillsDir: import_path.default.join(base, ".cursor", "skills"),
       configFile: ".cursorrules",
       extension: ".mdc",
       mergedFile: false
     },
     "continue": {
-      agentsDir: import_path.default.join(cwd, ".continue", "prompts"),
-      skillsDir: import_path.default.join(cwd, ".continue", "skills"),
+      agentsDir: import_path.default.join(base, ".continue", "prompts"),
+      skillsDir: import_path.default.join(base, ".continue", "skills"),
       configFile: ".continue/config.json",
       extension: ".md",
       mergedFile: false
+    },
+    "windsurf": {
+      agentsDir: import_path.default.join(base, ".windsurf", "rules"),
+      skillsDir: scope === "global" ? import_path.default.join(base, ".codeium", "windsurf", "global_workflows") : import_path.default.join(base, ".windsurf", "workflows"),
+      configFile: "global_rules.md",
+      extension: ".md",
+      mergedFile: false,
+      note: scope === "global" ? "Windsurf only officially documents a single ~/.windsurf/global_rules.md file for global rules \u2014 per-agent files here are best-effort." : void 0
+    },
+    "gemini-cli": {
+      agentsDir: import_path.default.join(base, ".gemini", "agents"),
+      skillsDir: import_path.default.join(base, ".gemini", "skills"),
+      configFile: "GEMINI.md",
+      extension: ".md",
+      mergedFile: false,
+      rootInstructionFile: import_path.default.join(base, "GEMINI.md")
     }
   };
   return map8[platform];
@@ -41168,7 +41232,7 @@ import_handlebars.default.registerHelper("includes", (arr, value) => {
 });
 async function renderAgents(answers, options) {
   const dryRun = options?.dryRun ?? false;
-  const platformPaths = getPlatformPaths(answers.platform);
+  const platformPaths = getPlatformPaths(answers.platform, answers.scope);
   const { agentsDir, extension, mergedFile } = platformPaths;
   if (!dryRun) {
     await import_fs_extra.default.ensureDir(agentsDir);
@@ -41182,7 +41246,7 @@ async function renderAgents(answers, options) {
     if (!dryRun) {
       await import_fs_extra.default.writeFile(outFile, mergedContent, "utf-8");
     }
-    written.push(outFile.replace(process.cwd() + import_path3.default.sep, ""));
+    written.push(displayPath(outFile));
   } else {
     for (const agentName of allAgents) {
       const templatePath = resolveTemplatePath(agentName);
@@ -41199,17 +41263,25 @@ async function renderAgents(answers, options) {
         await import_fs_extra.default.ensureDir(import_path3.default.dirname(outFile));
         await import_fs_extra.default.writeFile(outFile, rendered, "utf-8");
       }
-      written.push(outFile.replace(process.cwd() + import_path3.default.sep, ""));
+      written.push(displayPath(outFile));
     }
     if (platformPaths.rootInstructionFile) {
       const rootContent = generateRootInstruction(allAgents, answers.platform, context);
       if (!dryRun) {
+        await import_fs_extra.default.ensureDir(import_path3.default.dirname(platformPaths.rootInstructionFile));
         await import_fs_extra.default.writeFile(platformPaths.rootInstructionFile, rootContent, "utf-8");
       }
-      written.push(platformPaths.rootInstructionFile.replace(process.cwd() + import_path3.default.sep, ""));
+      written.push(displayPath(platformPaths.rootInstructionFile));
     }
   }
   return written;
+}
+function displayPath(absPath) {
+  const cwdPrefix = process.cwd() + import_path3.default.sep;
+  if (absPath.startsWith(cwdPrefix)) return absPath.slice(cwdPrefix.length);
+  const home = require("os").homedir() + import_path3.default.sep;
+  if (absPath.startsWith(home)) return import_path3.default.join("~", absPath.slice(home.length));
+  return absPath;
 }
 function resolveTemplatePath(agentName) {
   const genericDir = getGenericDir();
@@ -41232,6 +41304,12 @@ function transformForPlatform(content, agentName, platform, context) {
       return buildCursorFormat(frontmatter, body, agentName);
     case "continue":
       return buildContinueFormat(frontmatter, body, agentName);
+    case "windsurf":
+      return buildWindsurfFormat(frontmatter, body, agentName);
+    case "gemini-cli":
+      return buildGeminiFormat(frontmatter, body, agentName);
+    case "github-copilot-cli":
+      return buildCopilotCliFormat(frontmatter, body, agentName);
     case "codex":
       return content;
     default:
@@ -41296,6 +41374,35 @@ function buildContinueFormat(fm, body, agentName) {
     `> ${fm.description || ""}`
   ].join("\n");
   return `${header}
+
+${body}`;
+}
+function buildWindsurfFormat(fm, body, agentName) {
+  const trigger = agentName === "orchestrator" ? "always_on" : "model_decision";
+  const frontmatter = [
+    "---",
+    `trigger: ${trigger}`,
+    `description: ${fm.description || agentName}`,
+    "---"
+  ].join("\n");
+  return `${frontmatter}
+
+${body}`;
+}
+function buildGeminiFormat(fm, body, agentName) {
+  const header = `<!-- Agent: ${fm.name || agentName} | ${fm.description || ""} -->
+
+`;
+  return `${header}${body}`;
+}
+function buildCopilotCliFormat(fm, body, agentName) {
+  const frontmatter = [
+    "---",
+    `name: ${titleCase(agentName)}`,
+    `description: ${fm.description || agentName}`,
+    "---"
+  ].join("\n");
+  return `${frontmatter}
 
 ${body}`;
 }
@@ -41384,6 +41491,22 @@ function generateRootInstruction(agents, platform, context) {
     lines.push("## Agent Details");
     lines.push("");
     lines.push("See `.github/instructions/` for detailed per-agent instructions.");
+  } else if (platform === "gemini-cli") {
+    lines.push(`# ${context.projectName} \u2014 Agent Instructions`);
+    lines.push("");
+    lines.push(`## Project Context`);
+    if (context.techStack) lines.push(`- **Tech Stack:** ${context.techStack}`);
+    if (context.infrastructure) lines.push(`- **Infrastructure:** ${context.infrastructure}`);
+    lines.push("");
+    lines.push("## Multi-Agent Pipeline");
+    lines.push("");
+    lines.push("This project uses a multi-agent orchestration system. Agent instructions are imported from `.gemini/agents/`:");
+    lines.push("");
+    for (const agent of agents) {
+      lines.push(`@.gemini/agents/${agent}.md`);
+    }
+    lines.push("");
+    lines.push("Start by reading the **orchestrator** agent instructions when working on any ticket or feature.");
   }
   return lines.join("\n") + "\n";
 }
@@ -41445,6 +41568,7 @@ function titleCase(str) {
 function getTemperatureForAgent(agentName) {
   const temps = {
     orchestrator: 0.3,
+    debugger: 0.2,
     researcher: 0.2,
     planner: 0.3,
     dev: 0.2,
@@ -41463,6 +41587,9 @@ function getPermissionsForAgent(agentName) {
   const fullWrite = { bash: "allow", edit: "allow" };
   const perms = {
     orchestrator: fullWrite,
+    // Debugger runs repro scripts and creates/deletes its own throwaway scratch files;
+    // its instructions forbid touching production source.
+    debugger: fullWrite,
     researcher: readOnly,
     planner: { edit: "allow", bash: "deny" },
     dev: writeAsk,
@@ -41483,12 +41610,18 @@ function getPlanDir(platform) {
       return ".claude/plans";
     case "github-copilot":
       return ".github/plans";
+    case "github-copilot-cli":
+      return ".github/plans";
     case "codex":
       return ".codex/plans";
     case "cursor":
       return ".cursor/plans";
     case "continue":
       return ".continue/plans";
+    case "windsurf":
+      return ".windsurf/plans";
+    case "gemini-cli":
+      return ".gemini/plans";
     default:
       return ".ai/plans";
   }
@@ -41501,12 +41634,18 @@ function getReviewDir(platform) {
       return ".claude/reviews";
     case "github-copilot":
       return ".github/reviews";
+    case "github-copilot-cli":
+      return ".github/reviews";
     case "codex":
       return ".codex/reviews";
     case "cursor":
       return ".cursor/reviews";
     case "continue":
       return ".continue/reviews";
+    case "windsurf":
+      return ".windsurf/reviews";
+    case "gemini-cli":
+      return ".gemini/reviews";
     default:
       return ".ai/reviews";
   }
@@ -41519,12 +41658,18 @@ function getMemoryFile(platform) {
       return ".claude/MEMORY.md";
     case "github-copilot":
       return ".github/MEMORY.md";
+    case "github-copilot-cli":
+      return ".github/MEMORY.md";
     case "codex":
       return ".codex/MEMORY.md";
     case "cursor":
       return ".cursor/MEMORY.md";
     case "continue":
       return ".continue/MEMORY.md";
+    case "windsurf":
+      return ".windsurf/MEMORY.md";
+    case "gemini-cli":
+      return ".gemini/MEMORY.md";
     default:
       return ".ai/MEMORY.md";
   }
@@ -42060,6 +42205,7 @@ async function saveConfig(answers) {
   const config = {
     $schema: "https://shaagent.dev/schema/v1.json",
     platform: answers.platform,
+    scope: answers.scope,
     model: answers.model,
     project: {
       name: answers.projectName,
@@ -42090,10 +42236,11 @@ var VALID_SKILL_NAME = /^[a-zA-Z0-9_-]+$/;
 function skillCommand() {
   const cmd = new Command("skill");
   cmd.description("Manage skills for your multi-agent setup");
-  cmd.command("install <skillName>").description("Install a skill to your AI platform skill directory").option("--platform <name>", "Override platform from shaagent.config.json").action(async (skillName, opts) => {
+  cmd.command("install <skillName>").description("Install a skill to your AI platform skill directory").option("--platform <name>", "Override platform from shaagent.config.json").option("--global", "Install into the global (home directory) skill location").action(async (skillName, opts) => {
     const config = await loadConfig();
     const platform = opts.platform ?? config?.platform ?? "opencode";
-    await installSkill(skillName, platform);
+    const scope = opts.global ? "global" : config?.scope ?? "project";
+    await installSkill(skillName, platform, scope);
   });
   cmd.command("list").description("List available built-in skills").action(async () => {
     const skillsRoot = getSkillsRoot();
@@ -42123,13 +42270,13 @@ function validateSkillName(skillName) {
   }
   return true;
 }
-async function installSkill(skillName, platform) {
+async function installSkill(skillName, platform, scope = "project") {
   if (!validateSkillName(skillName)) {
     console.error(source_default.red(`  \u2717 Invalid skill name "${skillName}". Use only alphanumeric, hyphens, underscores.`));
     return;
   }
   const skillsRoot = getSkillsRoot();
-  const { skillsDir } = getPlatformPaths(platform);
+  const { skillsDir } = getPlatformPaths(platform, scope);
   const src = import_path5.default.join(skillsRoot, skillName);
   if (!await import_fs_extra3.default.pathExists(src)) {
     console.warn(source_default.yellow(`  \u26A0 Skill "${skillName}" not found in built-in library, skipping.`));
@@ -42139,8 +42286,8 @@ async function installSkill(skillName, platform) {
   await import_fs_extra3.default.ensureDir(dest);
   await import_fs_extra3.default.copy(src, dest, { overwrite: false });
   const home = process.env.HOME ?? process.env.USERPROFILE ?? "";
-  const displayPath = home ? dest.replace(home, "~") : dest;
-  console.log(source_default.green(`  \u2714 Installed skill: ${skillName} \u2192 ${displayPath}`));
+  const displayPath2 = home ? dest.replace(home, "~") : dest;
+  console.log(source_default.green(`  \u2714 Installed skill: ${skillName} \u2192 ${displayPath2}`));
 }
 
 // ../../node_modules/ora/index.js
@@ -43060,22 +43207,28 @@ function ora2(options) {
 // src/init.ts
 function initCommand() {
   const cmd = new Command("init");
-  cmd.description("Initialize multi-agent setup in the current repository").option("-y, --yes", "Skip prompts and use defaults").option("--platform <name>", "AI platform (opencode|claude-code|github-copilot|codex|cursor|continue)").option("--dry-run", "Preview what files would be written without making changes").action(async (opts) => {
+  cmd.description("Initialize multi-agent setup in the current repository").option("-y, --yes", "Skip prompts and use defaults").option("--platform <name>", "AI platform (opencode|claude-code|github-copilot|github-copilot-cli|codex|cursor|continue|windsurf|gemini-cli)").option("--global", "Install agents/skills once for this user (home directory), skipping the scope prompt").option("--project", "Install agents/skills into the current repository only, skipping the scope prompt").option("--dry-run", "Preview what files would be written without making changes").action(async (opts) => {
     console.log(source_default.cyan("\n  \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
     console.log(source_default.cyan("  \u2551        shaagent init                 \u2551"));
     console.log(source_default.cyan("  \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D\n"));
     if (opts.dryRun) {
       console.log(source_default.yellow("  \u26A1 DRY RUN \u2014 no files will be written\n"));
     }
-    const answers = opts.yes ? getDefaults(opts.platform) : await prompt2(opts.platform);
-    const spinner = ora2("Generating agent files...").start();
+    const scopeFlag = opts.global ? "global" : opts.project ? "project" : void 0;
+    const answers = opts.yes ? getDefaults(opts.platform, scopeFlag) : await prompt2(opts.platform, scopeFlag);
+    const { note } = getPlatformPaths(answers.platform, answers.scope);
+    if (note) {
+      console.log(source_default.yellow(`  \u26A0 ${note}
+`));
+    }
+    const spinner = ora2(`Generating agent files (${answers.scope})...`).start();
     try {
       const written = await renderAgents(answers, { dryRun: opts.dryRun ?? false });
       spinner.succeed(opts.dryRun ? "Agent files previewed (dry run)" : "Agent files written");
       if (answers.skills.length > 0 && !opts.dryRun) {
         const skillSpinner = ora2("Installing skills...").start();
         for (const skill of answers.skills) {
-          await installSkill(skill, answers.platform);
+          await installSkill(skill, answers.platform, answers.scope);
         }
         skillSpinner.succeed(`Skills installed: ${answers.skills.join(", ")}`);
       } else if (answers.skills.length > 0 && opts.dryRun) {
@@ -43098,16 +43251,17 @@ function initCommand() {
   });
   return cmd;
 }
-function getDefaults(platform) {
+function getDefaults(platform, scope) {
   return {
     platform: platform ?? "opencode",
+    scope: scope ?? "project",
     projectName: "my-project",
     language: ["csharp", "typescript", "python"],
     framework: ["dotnet8", "react"],
     infrastructure: "AWS + Kubernetes",
     cicd: "GitHub Actions",
     model: "github-copilot/claude-sonnet-4.6",
-    coreAgents: ["orchestrator", "researcher", "planner", "dev", "qa", "reviewer", "reviewer-fix"],
+    coreAgents: ["orchestrator", "debugger", "researcher", "planner", "dev", "qa", "reviewer", "reviewer-fix"],
     optionalAgents: [],
     skills: ["graphify", "caveman", "review"]
   };
@@ -43125,6 +43279,7 @@ function listCommand() {
     }
     console.log(source_default.cyan(`
 Platform: ${config.platform}`));
+    console.log(source_default.cyan(`Scope:    ${config.scope ?? "project"}`));
     console.log(source_default.cyan(`Project:  ${config.project?.name}`));
     console.log(source_default.white("\nCore Agents:"));
     config.agents?.core?.forEach((a) => console.log(`  \xB7 ${a}`));

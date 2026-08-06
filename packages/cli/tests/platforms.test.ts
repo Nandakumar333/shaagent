@@ -12,9 +12,12 @@ const ALL_PLATFORMS: Platform[] = [
   'opencode',
   'claude-code',
   'github-copilot',
+  'github-copilot-cli',
   'codex',
   'cursor',
   'continue',
+  'windsurf',
+  'gemini-cli',
 ];
 
 describe('platforms/index', () => {
@@ -75,18 +78,63 @@ describe('platforms/index', () => {
       expect(paths.mergedFile).toBe(false);
     });
 
-    it('should resolve skills to home directory for opencode', () => {
+    it('should resolve skills to project-local directory for opencode', () => {
       const paths = getPlatformPaths('opencode');
-      const home = os.homedir();
-      expect(paths.skillsDir).toContain(home);
-      expect(paths.skillsDir).toContain('opencode');
+      expect(paths.skillsDir).toContain('.opencode');
+      expect(paths.skillsDir).toContain('skills');
+      expect(paths.skillsDir).toBe(path.join(process.cwd(), '.opencode', 'skills'));
     });
 
-    it('should resolve skills to home directory for claude-code', () => {
+    it('should resolve skills to project-local directory for claude-code', () => {
       const paths = getPlatformPaths('claude-code');
-      const home = os.homedir();
-      expect(paths.skillsDir).toContain(home);
       expect(paths.skillsDir).toContain('.claude');
+      expect(paths.skillsDir).toContain('skills');
+      expect(paths.skillsDir).toBe(path.join(process.cwd(), '.claude', 'skills'));
+    });
+
+    it('github-copilot-cli should use .github/agents/ with .agent.md extension', () => {
+      const paths = getPlatformPaths('github-copilot-cli');
+      expect(paths.agentsDir).toContain(path.join('.github', 'agents'));
+      expect(paths.extension).toBe('.agent.md');
+      expect(paths.mergedFile).toBe(false);
+    });
+
+    it('windsurf should use .windsurf/rules/ with .md extension', () => {
+      const paths = getPlatformPaths('windsurf');
+      expect(paths.agentsDir).toContain(path.join('.windsurf', 'rules'));
+      expect(paths.extension).toBe('.md');
+      expect(paths.mergedFile).toBe(false);
+    });
+
+    it('gemini-cli should use .gemini/agents/ with GEMINI.md rootInstructionFile', () => {
+      const paths = getPlatformPaths('gemini-cli');
+      expect(paths.agentsDir).toContain(path.join('.gemini', 'agents'));
+      expect(paths.rootInstructionFile).toContain('GEMINI.md');
+    });
+  });
+
+  describe('getPlatformPaths — global scope', () => {
+    it.each(ALL_PLATFORMS)('should root paths under the home directory for platform: %s', (platform) => {
+      const paths = getPlatformPaths(platform, 'global');
+      expect(paths.agentsDir.startsWith(os.homedir())).toBe(true);
+      expect(paths.skillsDir.startsWith(os.homedir())).toBe(true);
+    });
+
+    it('claude-code global should use ~/.claude/agents and ~/.claude/CLAUDE.md', () => {
+      const paths = getPlatformPaths('claude-code', 'global');
+      expect(paths.agentsDir).toBe(path.join(os.homedir(), '.claude', 'agents'));
+      expect(paths.rootInstructionFile).toBe(path.join(os.homedir(), 'CLAUDE.md'));
+    });
+
+    it('github-copilot-cli global should use ~/.copilot/agents', () => {
+      const paths = getPlatformPaths('github-copilot-cli', 'global');
+      expect(paths.agentsDir).toBe(path.join(os.homedir(), '.copilot', 'agents'));
+    });
+
+    it('codex global should keep merged-file mode under ~/.codex', () => {
+      const paths = getPlatformPaths('codex', 'global');
+      expect(paths.mergedFile).toBe(true);
+      expect(paths.agentsDir).toBe(path.join(os.homedir(), '.codex'));
     });
   });
 });

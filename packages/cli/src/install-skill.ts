@@ -9,7 +9,7 @@ import chalk from 'chalk';
 import { getPlatformPaths } from './platforms';
 import { loadConfig } from './engine/manifest';
 import { getSkillsRoot } from './engine/paths';
-import type { Platform } from './init';
+import type { Platform, Scope } from './init';
 
 /** Valid skill name pattern: alphanumeric, hyphens, underscores only */
 const VALID_SKILL_NAME = /^[a-zA-Z0-9_-]+$/;
@@ -22,10 +22,12 @@ export function skillCommand(): Command {
     .command('install <skillName>')
     .description('Install a skill to your AI platform skill directory')
     .option('--platform <name>', 'Override platform from shaagent.config.json')
+    .option('--global', 'Install into the global (home directory) skill location')
     .action(async (skillName: string, opts) => {
       const config = await loadConfig();
       const platform: Platform = opts.platform ?? (config as any)?.platform ?? 'opencode';
-      await installSkill(skillName, platform);
+      const scope: Scope = opts.global ? 'global' : ((config as any)?.scope ?? 'project');
+      await installSkill(skillName, platform, scope);
     });
 
   cmd
@@ -67,7 +69,7 @@ export function validateSkillName(skillName: string): boolean {
   return true;
 }
 
-export async function installSkill(skillName: string, platform: Platform): Promise<void> {
+export async function installSkill(skillName: string, platform: Platform, scope: Scope = 'project'): Promise<void> {
   // Validate skill name to prevent path traversal
   if (!validateSkillName(skillName)) {
     console.error(chalk.red(`  ✗ Invalid skill name "${skillName}". Use only alphanumeric, hyphens, underscores.`));
@@ -75,7 +77,7 @@ export async function installSkill(skillName: string, platform: Platform): Promi
   }
 
   const skillsRoot = getSkillsRoot();
-  const { skillsDir } = getPlatformPaths(platform);
+  const { skillsDir } = getPlatformPaths(platform, scope);
   const src = path.join(skillsRoot, skillName);
 
   if (!(await fs.pathExists(src))) {

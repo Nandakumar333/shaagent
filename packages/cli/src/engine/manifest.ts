@@ -12,6 +12,7 @@ export async function saveConfig(answers: InitAnswers): Promise<void> {
   const config = {
     $schema: 'https://shaagent.dev/schema/v1.json',
     platform: answers.platform,
+    scope: answers.scope,
     model: answers.model,
     project: {
       name: answers.projectName,

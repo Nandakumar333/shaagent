@@ -9,6 +9,7 @@
 import Handlebars from 'handlebars';
 import fs from 'fs-extra';
 import path from 'path';
+import os from 'os';
 import type { InitAnswers, Platform } from '../init';
 import { getPlatformPaths } from '../platforms';
 import { getTemplatesRoot } from './paths';
@@ -36,7 +37,7 @@ import type { RenderOptions } from '../init';
 
 export async function renderAgents(answers: InitAnswers, options?: RenderOptions): Promise<string[]> {
   const dryRun = options?.dryRun ?? false;
-  const platformPaths = getPlatformPaths(answers.platform);
+  const platformPaths = getPlatformPaths(answers.platform, answers.scope);
   const { agentsDir, extension, mergedFile } = platformPaths;
 
   if (!dryRun) {
@@ -54,7 +55,7 @@ export async function renderAgents(answers: InitAnswers, options?: RenderOptions
     if (!dryRun) {
       await fs.writeFile(outFile, mergedContent, 'utf-8');
     }
-    written.push(outFile.replace(process.cwd() + path.sep, ''));
+    written.push(displayPath(outFile));
   } else {
     // Platforms that use individual files per agent
     for (const agentName of allAgents) {
@@ -75,20 +76,30 @@ export async function renderAgents(answers: InitAnswers, options?: RenderOptions
         await fs.ensureDir(path.dirname(outFile));
         await fs.writeFile(outFile, rendered, 'utf-8');
       }
-      written.push(outFile.replace(process.cwd() + path.sep, ''));
+      written.push(displayPath(outFile));
     }
 
     // Generate root instruction file if platform needs one
     if (platformPaths.rootInstructionFile) {
       const rootContent = generateRootInstruction(allAgents, answers.platform, context);
       if (!dryRun) {
+        await fs.ensureDir(path.dirname(platformPaths.rootInstructionFile));
         await fs.writeFile(platformPaths.rootInstructionFile, rootContent, 'utf-8');
       }
-      written.push(platformPaths.rootInstructionFile.replace(process.cwd() + path.sep, ''));
+      written.push(displayPath(platformPaths.rootInstructionFile));
     }
   }
 
   return written;
+}
+
+/** Shortens an absolute path for display: relative to cwd inside a project, `~`-relative for global installs */
+function displayPath(absPath: string): string {
+  const cwdPrefix = process.cwd() + path.sep;
+  if (absPath.startsWith(cwdPrefix)) return absPath.slice(cwdPrefix.length);
+  const home = require('os').homedir() + path.sep;
+  if (absPath.startsWith(home)) return path.join('~', absPath.slice(home.length));
+  return absPath;
 }
 
 // ─── Template Resolution ────────────────────────────────────────────────────
@@ -139,6 +150,15 @@ function transformForPlatform(
 
     case 'continue':
       return buildContinueFormat(frontmatter, body, agentName);
+
+    case 'windsurf':
+      return buildWindsurfFormat(frontmatter, body, agentName);
+
+    case 'gemini-cli':
+      return buildGeminiFormat(frontmatter, body, agentName);
+
+    case 'github-copilot-cli':
+      return buildCopilotCliFormat(frontmatter, body, agentName);
 
     case 'codex':
       // Codex uses merged file, shouldn't reach here
@@ -250,6 +270,55 @@ function buildContinueFormat(
   ].join('\n');
 
   return `${header}\n\n${body}`;
+}
+
+/**
+ * Windsurf format: .windsurf/rules/*.md with trigger/description frontmatter
+ */
+function buildWindsurfFormat(
+  fm: Record<string, string>,
+  body: string,
+  agentName: string,
+): string {
+  const trigger = agentName === 'orchestrator' ? 'always_on' : 'model_decision';
+  const frontmatter = [
+    '---',
+    `trigger: ${trigger}`,
+    `description: ${fm.description || agentName}`,
+    '---',
+  ].join('\n');
+
+  return `${frontmatter}\n\n${body}`;
+}
+
+/**
+ * Gemini CLI format: plain markdown, imported into GEMINI.md via @-import syntax
+ */
+function buildGeminiFormat(
+  fm: Record<string, string>,
+  body: string,
+  agentName: string,
+): string {
+  const header = `<!-- Agent: ${fm.name || agentName} | ${fm.description || ''} -->\n\n`;
+  return `${header}${body}`;
+}
+
+/**
+ * GitHub Copilot CLI format: .agent.md files with name/description frontmatter
+ */
+function buildCopilotCliFormat(
+  fm: Record<string, string>,
+  body: string,
+  agentName: string,
+): string {
+  const frontmatter = [
+    '---',
+    `name: ${titleCase(agentName)}`,
+    `description: ${fm.description || agentName}`,
+    '---',
+  ].join('\n');
+
+  return `${frontmatter}\n\n${body}`;
 }
 
 // ─── Merged File (Codex / AGENTS.md) ────────────────────────────────────────
@@ -373,6 +442,22 @@ function generateRootInstruction(
     lines.push('## Agent Details');
     lines.push('');
     lines.push('See `.github/instructions/` for detailed per-agent instructions.');
+  } else if (platform === 'gemini-cli') {
+    lines.push(`# ${context.projectName} — Agent Instructions`);
+    lines.push('');
+    lines.push(`## Project Context`);
+    if (context.techStack) lines.push(`- **Tech Stack:** ${context.techStack}`);
+    if (context.infrastructure) lines.push(`- **Infrastructure:** ${context.infrastructure}`);
+    lines.push('');
+    lines.push('## Multi-Agent Pipeline');
+    lines.push('');
+    lines.push('This project uses a multi-agent orchestration system. Agent instructions are imported from `.gemini/agents/`:');
+    lines.push('');
+    for (const agent of agents) {
+      lines.push(`@.gemini/agents/${agent}.md`);
+    }
+    lines.push('');
+    lines.push('Start by reading the **orchestrator** agent instructions when working on any ticket or feature.');
   }
 
   return lines.join('\n') + '\n';
@@ -454,6 +539,7 @@ function titleCase(str: string): string {
 function getTemperatureForAgent(agentName: string): number {
   const temps: Record<string, number> = {
     orchestrator: 0.3,
+    debugger: 0.2,
     researcher: 0.2,
     planner: 0.3,
     dev: 0.2,
@@ -474,6 +560,9 @@ function getPermissionsForAgent(agentName: string): Record<string, string> {
 
   const perms: Record<string, Record<string, string>> = {
     orchestrator: fullWrite,
+    // Debugger runs repro scripts and creates/deletes its own throwaway scratch files;
+    // its instructions forbid touching production source.
+    debugger: fullWrite,
     researcher: readOnly,
     planner: { edit: 'allow', bash: 'deny' },
     dev: writeAsk,
@@ -490,37 +579,46 @@ function getPermissionsForAgent(agentName: string): Record<string, string> {
 
 function getPlanDir(platform: Platform): string {
   switch (platform) {
-    case 'opencode':       return '.opencode/plans';
-    case 'claude-code':    return '.claude/plans';
-    case 'github-copilot': return '.github/plans';
-    case 'codex':          return '.codex/plans';
-    case 'cursor':         return '.cursor/plans';
-    case 'continue':       return '.continue/plans';
-    default:               return '.ai/plans';
+    case 'opencode':           return '.opencode/plans';
+    case 'claude-code':        return '.claude/plans';
+    case 'github-copilot':     return '.github/plans';
+    case 'github-copilot-cli': return '.github/plans';
+    case 'codex':               return '.codex/plans';
+    case 'cursor':               return '.cursor/plans';
+    case 'continue':             return '.continue/plans';
+    case 'windsurf':             return '.windsurf/plans';
+    case 'gemini-cli':           return '.gemini/plans';
+    default:                     return '.ai/plans';
   }
 }
 
 function getReviewDir(platform: Platform): string {
   switch (platform) {
-    case 'opencode':       return '.opencode/reviews';
-    case 'claude-code':    return '.claude/reviews';
-    case 'github-copilot': return '.github/reviews';
-    case 'codex':          return '.codex/reviews';
-    case 'cursor':         return '.cursor/reviews';
-    case 'continue':       return '.continue/reviews';
-    default:               return '.ai/reviews';
+    case 'opencode':           return '.opencode/reviews';
+    case 'claude-code':        return '.claude/reviews';
+    case 'github-copilot':     return '.github/reviews';
+    case 'github-copilot-cli': return '.github/reviews';
+    case 'codex':               return '.codex/reviews';
+    case 'cursor':               return '.cursor/reviews';
+    case 'continue':             return '.continue/reviews';
+    case 'windsurf':             return '.windsurf/reviews';
+    case 'gemini-cli':           return '.gemini/reviews';
+    default:                     return '.ai/reviews';
   }
 }
 
 function getMemoryFile(platform: Platform): string {
   switch (platform) {
-    case 'opencode':       return '.opencode/MEMORY.md';
-    case 'claude-code':    return '.claude/MEMORY.md';
-    case 'github-copilot': return '.github/MEMORY.md';
-    case 'codex':          return '.codex/MEMORY.md';
-    case 'cursor':         return '.cursor/MEMORY.md';
-    case 'continue':       return '.continue/MEMORY.md';
-    default:               return '.ai/MEMORY.md';
+    case 'opencode':           return '.opencode/MEMORY.md';
+    case 'claude-code':        return '.claude/MEMORY.md';
+    case 'github-copilot':     return '.github/MEMORY.md';
+    case 'github-copilot-cli': return '.github/MEMORY.md';
+    case 'codex':               return '.codex/MEMORY.md';
+    case 'cursor':               return '.cursor/MEMORY.md';
+    case 'continue':             return '.continue/MEMORY.md';
+    case 'windsurf':             return '.windsurf/MEMORY.md';
+    case 'gemini-cli':           return '.gemini/MEMORY.md';
+    default:                     return '.ai/MEMORY.md';
   }
 }
 

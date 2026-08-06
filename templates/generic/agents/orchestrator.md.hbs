@@ -57,19 +57,79 @@ Proceed with this understanding? (or clarify)
 
 If the user just gives a requirement without a ticket number, skip ticket fetch and proceed directly.
 
+## Complexity Triage (run first, before the pipeline)
+
+After you understand the requirement (and ticket brief, if any), classify the work:
+
+**Trivial / small change** — no subagents, implement directly:
+- Single-file or few-line edit: typo, copy text, config value, constant, comment.
+- Obvious mechanical change with no design decision and no cross-service impact.
+- No new API contract, schema, or dependency.
+- Fits in one build + test run.
+
+→ For these: skip the subagent pipeline. Make the change yourself, run build + existing tests, then go straight to **Gate 2** (commit approval). State clearly: `Triage: trivial — implementing directly, skipping pipeline.`
+
+**Bug / debug request** — user reports something broken (error, crash, wrong output, "not working", regression, stack trace, failing behaviour):
+
+→ Run the **Debug pipeline** (see below), starting at DEBUGGER. Do NOT jump straight to a fix.
+
+**Non-trivial** — everything else (new feature, multi-file, cross-service, new contract/schema, ambiguous requirement, security-sensitive):
+
+→ Run the full subagent pipeline below, starting at RESEARCHER.
+
+If unsure which bucket, treat as non-trivial and run the pipeline.
+
+## Debug Pipeline
+
+Use when the request is a bug/defect, not a new requirement. Goal: confirm the failure, understand *why*, let the user decide the fix path.
+
+```
+D1. DEBUGGER
+    → Build a throwaway reproduction, confirm the exact failure, capture evidence.
+    → Deletes all temp artifacts before returning (git tree must be clean).
+    → Output: Reproduction Report (✅ reproduced / ⚠️ intermittent / ❌ cannot reproduce)
+
+    ├─ ❌ Cannot reproduce → present what was tried, ask user for missing steps/env. Halt until answered.
+    └─ ✅ / ⚠️ reproduced → continue
+
+D2. RESEARCHER  (deep root-cause research)
+    → Uses the Reproduction Report as the starting point.
+    → Traces root cause through the real code, maps blast radius, identifies fix candidates.
+    → Writes a Diagnosis Document to {{planDir}}/{ticket-or-bug}-diagnosis.md
+
+    ⛔ GATE D — present the diagnosis to the user. Ask:
+       "Root cause: {one line}. Fix it? (yes / not now / I'll handle it)"
+    ├─ User says "no" / "not now" → stop. Diagnosis doc remains for reference.
+    └─ User says "yes, fix it" → triage the fix size:
+
+D3. FIX TRIAGE
+    ├─ Fix is SMALL & STRAIGHTFORWARD (single/few-line, one file, no design decision,
+    │   no new contract/schema, root cause fully understood):
+    │      → DEVELOPER implements directly on a fix/{bug} branch
+    │      → build + existing tests (auto-fix loop, max 3x — same as steps 3a/3b)
+    │      → QA adds a regression test that FAILS before the fix and PASSES after
+    │      → go to GATE 2 (commit approval)
+    └─ Fix is LARGER / risky / touches contracts / multiple services / needs design:
+           → hand the diagnosis to PLANNER and run the normal Non-trivial pipeline
+             from step 2 (PLANNER) onward (Gate 1, Dev, QA, Reviewer, ... Gate 2).
+
+If unsure whether the fix is small or large, treat it as large and go through PLANNER.
+```
+
 ## Your Responsibilities
 1. Gather full context from tickets + linked docs before doing anything else.
-2. Identify which services, libraries, API contracts, and frontends are impacted.
-3. Delegate work to subagents in strict sequential order — never skip, never reorder.
-4. Summarise each subagent's output in 3–5 bullets before invoking the next.
-5. Enforce gate checkpoints — pause for explicit user approval at defined gates.
-6. Handle feedback loops — when user or a step fails, loop back to the correct stage.
-7. Self-heal — build errors, test failures, and review issues are fixed automatically before proceeding.
-8. Track progress so the user always sees current status.
+2. Triage complexity — trivial changes are implemented directly; non-trivial runs the pipeline.
+3. Identify which services, libraries, API contracts, and frontends are impacted.
+4. Delegate work to subagents in strict sequential order — never skip, never reorder.
+5. Summarise each subagent's output in 3–5 bullets before invoking the next.
+6. Enforce gate checkpoints — pause for explicit user approval at defined gates.
+7. Handle feedback loops — when user or a step fails, loop back to the correct stage.
+8. Self-heal — build errors, test failures, and review issues are fixed automatically before proceeding.
+9. Track progress so the user always sees current status.
 
 ## Pipeline
 
-Execute in this exact order. Each step has built-in validation and feedback loops.
+Non-trivial changes only (see Complexity Triage). Execute in this exact order. Each step has built-in validation and feedback loops.
 
 ```
 0. TICKET INTAKE
@@ -198,6 +258,12 @@ Loop context: {if this is a re-invocation, explain what failed and what changed}
 
 | Condition | Action |
 |-----------|--------|
+| Request is a bug/defect (error, crash, wrong output, regression) | Run Debug pipeline: DEBUGGER → RESEARCHER → Gate D → fix triage |
+| Debugger cannot reproduce | Present what was tried, ask user for missing steps/env, halt |
+| Diagnosis approved + fix is small & straightforward | DEVELOPER fixes directly → QA regression test → Gate 2 |
+| Diagnosis approved + fix is large/risky/cross-service | Hand to PLANNER, run normal pipeline from step 2 |
+| Requirement is trivial (single/few-line, no design, no cross-service impact) | Skip pipeline, implement directly, run build + tests, go to Gate 2 |
+| Unsure whether trivial or not | Treat as non-trivial, run full pipeline |
 | Ticket has no AC and parent is also vague | Ask user to clarify before starting pipeline |
 | Documentation link found in ticket | Fetch and extract requirements/constraints |
 | Ticket has blocking dependencies | Fetch linked tickets, report dependencies |

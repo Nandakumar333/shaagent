@@ -7,6 +7,7 @@ import { prompt } from './prompts';
 import { renderAgents } from './engine/template';
 import { installSkill } from './install-skill';
 import { saveConfig } from './engine/manifest';
+import { getPlatformPaths } from './platforms';
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -15,7 +16,9 @@ export function initCommand(): Command {
   cmd
     .description('Initialize multi-agent setup in the current repository')
     .option('-y, --yes', 'Skip prompts and use defaults')
-    .option('--platform <name>', 'AI platform (opencode|claude-code|github-copilot|codex|cursor|continue)')
+    .option('--platform <name>', 'AI platform (opencode|claude-code|github-copilot|github-copilot-cli|codex|cursor|continue|windsurf|gemini-cli)')
+    .option('--global', 'Install agents/skills once for this user (home directory), skipping the scope prompt')
+    .option('--project', 'Install agents/skills into the current repository only, skipping the scope prompt')
     .option('--dry-run', 'Preview what files would be written without making changes')
     .action(async (opts) => {
       console.log(chalk.cyan('\n  ╔══════════════════════════════════════╗'));
@@ -26,9 +29,18 @@ export function initCommand(): Command {
         console.log(chalk.yellow('  ⚡ DRY RUN — no files will be written\n'));
       }
 
-      const answers = opts.yes ? getDefaults(opts.platform) : await prompt(opts.platform);
+      const scopeFlag: Scope | undefined = opts.global ? 'global' : opts.project ? 'project' : undefined;
 
-      const spinner = ora('Generating agent files...').start();
+      const answers = opts.yes
+        ? getDefaults(opts.platform, scopeFlag)
+        : await prompt(opts.platform, scopeFlag);
+
+      const { note } = getPlatformPaths(answers.platform, answers.scope);
+      if (note) {
+        console.log(chalk.yellow(`  ⚠ ${note}\n`));
+      }
+
+      const spinner = ora(`Generating agent files (${answers.scope})...`).start();
       try {
         const written = await renderAgents(answers, { dryRun: opts.dryRun ?? false });
         spinner.succeed(opts.dryRun ? 'Agent files previewed (dry run)' : 'Agent files written');
@@ -37,7 +49,7 @@ export function initCommand(): Command {
         if (answers.skills.length > 0 && !opts.dryRun) {
           const skillSpinner = ora('Installing skills...').start();
           for (const skill of answers.skills) {
-            await installSkill(skill, answers.platform);
+            await installSkill(skill, answers.platform, answers.scope);
           }
           skillSpinner.succeed(`Skills installed: ${answers.skills.join(', ')}`);
         } else if (answers.skills.length > 0 && opts.dryRun) {
@@ -63,16 +75,17 @@ export function initCommand(): Command {
   return cmd;
 }
 
-function getDefaults(platform?: string): InitAnswers {
+function getDefaults(platform?: string, scope?: Scope): InitAnswers {
   return {
     platform: (platform as Platform) ?? 'opencode',
+    scope: scope ?? 'project',
     projectName: 'my-project',
     language: ['csharp', 'typescript', 'python'],
     framework: ['dotnet8', 'react'],
     infrastructure: 'AWS + Kubernetes',
     cicd: 'GitHub Actions',
     model: 'github-copilot/claude-sonnet-4.6',
-    coreAgents: ['orchestrator', 'researcher', 'planner', 'dev', 'qa', 'reviewer', 'reviewer-fix'],
+    coreAgents: ['orchestrator', 'debugger', 'researcher', 'planner', 'dev', 'qa', 'reviewer', 'reviewer-fix'],
     optionalAgents: [],
     skills: ['graphify', 'caveman', 'review'],
   };
@@ -80,6 +93,7 @@ function getDefaults(platform?: string): InitAnswers {
 
 export interface InitAnswers {
   platform: Platform;
+  scope: Scope;
   projectName: string;
   language: string[];
   framework: string[];
@@ -99,6 +113,12 @@ export type Platform =
   | 'opencode'
   | 'claude-code'
   | 'github-copilot'
+  | 'github-copilot-cli'
   | 'codex'
   | 'cursor'
-  | 'continue';
+  | 'continue'
+  | 'windsurf'
+  | 'gemini-cli';
+
+/** global = installed once for the user (home directory), project = installed in the current repo */
+export type Scope = 'global' | 'project';
