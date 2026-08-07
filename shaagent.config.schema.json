@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ShaAgent Configuration",
+  "description": "Configuration for shaagent multi-agent scaffold — platform-agnostic, single generic template set",
+  "type": "object",
+  "required": ["platform"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "platform": {
+      "type": "string",
+      "enum": ["opencode", "claude-code", "github-copilot", "codex", "cursor", "continue"],
+      "description": "The AI coding platform to generate agent files for. All platforms use the same generic templates; only the output format (frontmatter, file structure, extensions) differs."
+    },
+    "model": {
+      "type": "string",
+      "description": "Default model ID in provider/model format (e.g., anthropic/claude-sonnet-4-20250514)"
+    },
+    "project": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "language": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Primary languages (e.g., csharp, typescript, python, rust, go, java)"
+        },
+        "framework": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Frameworks in use (e.g., dotnet8, react, nextjs, fastapi)"
+        },
+        "infrastructure": {
+          "type": "string",
+          "description": "Infrastructure platform (e.g., AWS + Kubernetes)"
+        },
+        "cicd": {
+          "type": "string",
+          "description": "CI/CD platform (e.g., GitHub Actions)"
+        }
+      }
+    },
+    "agents": {
+      "type": "object",
+      "properties": {
+        "core": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["orchestrator", "researcher", "planner", "dev", "qa", "reviewer", "reviewer-fix"]
+          },
+          "description": "Core pipeline agents (always sequential)"
+        },
+        "optional": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["security", "architecture-reviewer", "project-memory-creator"]
+          },
+          "description": "Optional agents invoked conditionally"
+        }
+      }
+    },
+    "skills": {
+      "type": "object",
+      "properties": {
+        "installed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["graphify", "caveman", "review", "tdd", "security-scan", "arch-review"]
+          }
+        }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "description": "Override default paths for plan/review/memory files",
+      "properties": {
+        "plans": { "type": "string" },
+        "reviews": { "type": "string" },
+        "memory": { "type": "string" }
+      }
+    }
+  }
+}
