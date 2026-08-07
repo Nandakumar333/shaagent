@@ -18,8 +18,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - run: npm ci
 
@@ -37,7 +37,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: ['18', '20', '22']
+        node-version: ["20", "22", "24"]
       fail-fast: false
 
     steps:
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: "npm"
 
       - run: npm ci
 
@@ -54,12 +54,12 @@ jobs:
         run: npm test --workspace=packages/cli
 
       - name: Run tests with coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20'
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '24'
         run: npx vitest run --coverage
         working-directory: packages/cli
 
       - name: Upload coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20'
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '24'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -74,8 +74,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - run: npm ci
 
@@ -99,5 +99,3 @@ jobs:
         with:
           name: shaagent-dist
           path: packages/cli/dist/
-
-
