@@ -1,0 +1,181 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      package-name: ${{ steps.meta.outputs.package-name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: TypeScript type check
+        run: npm run build --workspace=packages/cli -- --noEmit
+
+      - name: Run tests
+        run: npm test --workspace=packages/cli
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "package-name=shaagent" >> "$GITHUB_OUTPUT"
+          echo "🚀 Deploying shaagent@$VERSION"
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [validate]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build bundle
+        run: npm run build --workspace=packages/cli
+
+      - name: Verify dist output
+        run: |
+          test -f packages/cli/dist/index.js
+          test -d packages/cli/dist/templates
+          test -d packages/cli/dist/skills
+
+      - name: Smoke test
+        run: |
+          node packages/cli/dist/index.js --version
+          node packages/cli/dist/index.js init --yes --dry-run
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shaagent-dist
+          path: packages/cli/dist/
+
+  publish-npm:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: [validate, build]
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: shaagent-dist
+          path: packages/cli/dist/
+
+      - name: Verify package version matches tag
+        run: |
+          PKG_VERSION=$(node -p "require('./packages/cli/package.json').version")
+          TAG_VERSION="${{ needs.validate.outputs.version }}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "❌ Version mismatch: package.json=$PKG_VERSION, tag=$TAG_VERSION"
+            exit 1
+          fi
+
+      - name: Publish to npm
+        run: npm publish --workspace=packages/cli --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify published package
+        run: |
+          sleep 10
+          npm info shaagent@${{ needs.validate.outputs.version }} version
+
+  github-release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate, publish-npm]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: shaagent-dist
+          path: shaagent-dist/
+
+      - name: Create tarball
+        run: tar -czf shaagent-${{ needs.validate.outputs.version }}.tar.gz -C shaagent-dist .
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Get commits since last tag
+          PREV_TAG=$(git tag --sort=-version:refname | grep '^v' | sed -n '2p')
+          if [ -n "$PREV_TAG" ]; then
+            NOTES=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG"..HEAD)
+          else
+            NOTES=$(git log --pretty=format:"- %s (%h)" HEAD~10..HEAD)
+          fi
+          echo "notes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: shaagent v${{ needs.validate.outputs.version }}
+          body: |
+            ## What's Changed
+
+            ${{ steps.notes.outputs.notes }}
+
+            ## Install
+
+            ```bash
+            npm install -g shaagent@${{ needs.validate.outputs.version }}
+            ```
+
+            ## Verify
+
+            ```bash
+            shaagent --version
+            ```
+          files: shaagent-${{ needs.validate.outputs.version }}.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
