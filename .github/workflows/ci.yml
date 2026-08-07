@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: TypeScript type check
+        run: npm run build --workspace=packages/cli -- --noEmit
+        env:
+          NODE_ENV: production
+
+      - name: ESLint
+        run: npm run lint --workspace=packages/cli
+
+  test:
+    name: Test (Node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ['18', '20', '22']
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Run tests
+        run: npm test --workspace=packages/cli
+
+      - name: Run tests with coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20'
+        run: npx vitest run --coverage
+        working-directory: packages/cli
+
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: packages/cli/coverage/
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build bundle
+        run: npm run build --workspace=packages/cli
+
+      - name: Verify dist output
+        run: |
+          test -f packages/cli/dist/index.js
+          test -d packages/cli/dist/templates
+          test -d packages/cli/dist/skills
+
+      - name: Smoke test — shaagent --version
+        run: node packages/cli/dist/index.js --version
+
+      - name: Smoke test — shaagent init --dry-run --yes
+        run: node packages/cli/dist/index.js init --yes --dry-run
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shaagent-dist
+          path: packages/cli/dist/
+
+
