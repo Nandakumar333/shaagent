@@ -97,6 +97,7 @@ export async function renderAgents(answers: InitAnswers, options?: RenderOptions
 function displayPath(absPath: string): string {
   const cwdPrefix = process.cwd() + path.sep;
   if (absPath.startsWith(cwdPrefix)) return absPath.slice(cwdPrefix.length);
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const home = require('os').homedir() + path.sep;
   if (absPath.startsWith(home)) return path.join('~', absPath.slice(home.length));
   return absPath;

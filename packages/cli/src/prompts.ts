@@ -173,6 +173,7 @@ function detectProjectName(): string {
     return pkg.name ?? 'my-project';
   } catch {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const fs = require('fs');
       const toml = fs.readFileSync(`${process.cwd()}/pyproject.toml`, 'utf-8');
       const match = toml.match(/name\s*=\s*"(.+?)"/);
