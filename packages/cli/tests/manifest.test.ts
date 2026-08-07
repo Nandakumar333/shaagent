@@ -83,5 +83,111 @@ describe('engine/manifest', () => {
       expect(config).not.toBeNull();
       expect((config as any).platform).toBe('opencode');
     });
+
+    it('should throw on invalid platform in config file', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'invalid-platform' });
+      await expect(loadConfig()).rejects.toThrow('Invalid');
+    });
+
+    it('should throw when platform is missing', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { model: 'some-model' });
+      await expect(loadConfig()).rejects.toThrow('platform');
+    });
+
+    it('should throw when model is not a string', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', model: 123 });
+      await expect(loadConfig()).rejects.toThrow('model');
+    });
+
+    it('should throw when project is not an object', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', project: 'bad' });
+      await expect(loadConfig()).rejects.toThrow('project');
+    });
+
+    it('should throw when project.language is not an array', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', project: { language: 'ts' } });
+      await expect(loadConfig()).rejects.toThrow('language');
+    });
+
+    it('should throw when project.framework is not an array', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', project: { framework: 'react' } });
+      await expect(loadConfig()).rejects.toThrow('framework');
+    });
+
+    it('should throw when agents is not an object', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', agents: 'bad' });
+      await expect(loadConfig()).rejects.toThrow('agents');
+    });
+
+    it('should throw when agents.core is not an array', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', agents: { core: 'orchestrator' } });
+      await expect(loadConfig()).rejects.toThrow('agents.core');
+    });
+
+    it('should throw on invalid core agent name', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', agents: { core: ['invalid-agent'] } });
+      await expect(loadConfig()).rejects.toThrow('Invalid core agent');
+    });
+
+    it('should throw when agents.optional is not an array', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', agents: { optional: 'security' } });
+      await expect(loadConfig()).rejects.toThrow('agents.optional');
+    });
+
+    it('should throw on invalid optional agent name', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', agents: { optional: ['bogus'] } });
+      await expect(loadConfig()).rejects.toThrow('Invalid optional agent');
+    });
+
+    it('should throw when skills is not an object', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', skills: 'bad' });
+      await expect(loadConfig()).rejects.toThrow('skills');
+    });
+
+    it('should throw when skills.installed is not an array', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', skills: { installed: 'graphify' } });
+      await expect(loadConfig()).rejects.toThrow('skills.installed');
+    });
+
+    it('should throw on invalid skill name', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', skills: { installed: ['fake-skill'] } });
+      await expect(loadConfig()).rejects.toThrow('Invalid skill');
+    });
+  });
+
+  describe('saveConfig validation', () => {
+    it('should throw when given invalid platform', async () => {
+      const bad = { ...mockAnswers, platform: 'invalid' as any };
+      await expect(saveConfig(bad)).rejects.toThrow('Invalid configuration');
+    });
+
+    it('should throw when given invalid core agent', async () => {
+      const bad = { ...mockAnswers, coreAgents: ['orchestrator', 'nonexistent'] };
+      await expect(saveConfig(bad)).rejects.toThrow('Invalid');
+    });
+
+    it('should throw when given invalid optional agent', async () => {
+      const bad = { ...mockAnswers, optionalAgents: ['bogus-agent'] };
+      await expect(saveConfig(bad)).rejects.toThrow('Invalid');
+    });
+
+    it('should throw when given invalid skill', async () => {
+      const bad = { ...mockAnswers, skills: ['nonexistent-skill'] };
+      await expect(saveConfig(bad)).rejects.toThrow('Invalid');
+    });
   });
 });

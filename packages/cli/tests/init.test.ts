@@ -1,0 +1,150 @@
+/**
+ * Unit tests for init.ts — initCommand and getDefaults.
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { initCommand } from '../src/init';
+
+// Mock dependencies
+vi.mock('../src/prompts', () => ({
+  prompt: vi.fn().mockResolvedValue({
+    platform: 'opencode',
+    scope: 'project',
+    projectName: 'test-project',
+    language: ['typescript'],
+    framework: ['react'],
+    infrastructure: 'AWS',
+    cicd: 'GitHub Actions',
+    model: 'github-copilot/claude-sonnet-4.6',
+    coreAgents: ['orchestrator', 'dev'],
+    optionalAgents: [],
+    skills: [],
+  }),
+}));
+
+vi.mock('../src/engine/template', () => ({
+  renderAgents: vi.fn().mockResolvedValue(['file1.md', 'file2.md']),
+}));
+
+vi.mock('../src/install-skill', () => ({
+  installSkill: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../src/engine/manifest', () => ({
+  saveConfig: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../src/platforms', () => ({
+  getPlatformPaths: vi.fn().mockReturnValue({
+    agentsDir: '.opencode/agents',
+    skillsDir: '.opencode/skills',
+    rootFile: null,
+    note: null,
+  }),
+}));
+
+describe('init', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('initCommand', () => {
+    it('should return a Command named "init"', () => {
+      const cmd = initCommand();
+      expect(cmd.name()).toBe('init');
+    });
+
+    it('should have --yes option', () => {
+      const cmd = initCommand();
+      const opts = cmd.options.map(o => o.long);
+      expect(opts).toContain('--yes');
+    });
+
+    it('should have --platform option', () => {
+      const cmd = initCommand();
+      const opts = cmd.options.map(o => o.long);
+      expect(opts).toContain('--platform');
+    });
+
+    it('should have --global option', () => {
+      const cmd = initCommand();
+      const opts = cmd.options.map(o => o.long);
+      expect(opts).toContain('--global');
+    });
+
+    it('should have --project option', () => {
+      const cmd = initCommand();
+      const opts = cmd.options.map(o => o.long);
+      expect(opts).toContain('--project');
+    });
+
+    it('should have --dry-run option', () => {
+      const cmd = initCommand();
+      const opts = cmd.options.map(o => o.long);
+      expect(opts).toContain('--dry-run');
+    });
+
+    it('should have correct description', () => {
+      const cmd = initCommand();
+      expect(cmd.description()).toContain('Initialize');
+    });
+  });
+
+  describe('getDefaults (via --yes flag)', () => {
+    it('should run with --yes and produce output without prompts', async () => {
+      const { renderAgents } = await import('../src/engine/template');
+      const { saveConfig } = await import('../src/engine/manifest');
+
+      const cmd = initCommand();
+      // Simulate --yes --dry-run to avoid file writes
+      await cmd.parseAsync(['node', 'test', '--yes', '--dry-run']);
+
+      expect(renderAgents).toHaveBeenCalledWith(
+        expect.objectContaining({
+          platform: 'opencode',
+          scope: 'project',
+          projectName: 'my-project',
+        }),
+        { dryRun: true }
+      );
+      // saveConfig should NOT be called in dry-run
+      expect(saveConfig).not.toHaveBeenCalled();
+    });
+
+    it('should use provided platform flag in defaults', async () => {
+      const { renderAgents } = await import('../src/engine/template');
+
+      const cmd = initCommand();
+      await cmd.parseAsync(['node', 'test', '--yes', '--platform', 'cursor', '--dry-run']);
+
+      expect(renderAgents).toHaveBeenCalledWith(
+        expect.objectContaining({ platform: 'cursor' }),
+        { dryRun: true }
+      );
+    });
+
+    it('should use --global scope flag', async () => {
+      const { renderAgents } = await import('../src/engine/template');
+
+      const cmd = initCommand();
+      await cmd.parseAsync(['node', 'test', '--yes', '--global', '--dry-run']);
+
+      expect(renderAgents).toHaveBeenCalledWith(
+        expect.objectContaining({ scope: 'global' }),
+        { dryRun: true }
+      );
+    });
+
+    it('should use --project scope flag', async () => {
+      const { renderAgents } = await import('../src/engine/template');
+
+      const cmd = initCommand();
+      await cmd.parseAsync(['node', 'test', '--yes', '--project', '--dry-run']);
+
+      expect(renderAgents).toHaveBeenCalledWith(
+        expect.objectContaining({ scope: 'project' }),
+        { dryRun: true }
+      );
+    });
+  });
+});

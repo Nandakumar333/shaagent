@@ -1,0 +1,184 @@
+/**
+ * Unit tests for prompts.ts — prompt function and helpers.
+ * We mock inquirer to test the logic without interactive input.
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('inquirer', () => ({
+  default: {
+    prompt: vi.fn(),
+  },
+}));
+
+describe('prompts', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+  });
+
+  describe('prompt function', () => {
+    it('should return answers with platform from flag', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        scope: 'project',
+        projectName: 'test',
+        language: ['typescript'],
+        framework: ['react'],
+        infrastructure: 'AWS',
+        cicd: 'GitHub Actions',
+        model: 'claude-sonnet-4.6',
+        coreAgents: ['orchestrator', 'dev'],
+        optionalAgents: [],
+        skills: ['graphify'],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt('cursor', undefined);
+
+      expect(result.platform).toBe('cursor');
+    });
+
+    it('should return answers with scope from flag', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        platform: 'opencode',
+        projectName: 'test',
+        language: ['python'],
+        framework: ['fastapi'],
+        infrastructure: 'GCP',
+        cicd: 'GitLab CI',
+        model: 'github-copilot/claude-sonnet-4.6',
+        coreAgents: ['orchestrator'],
+        optionalAgents: [],
+        skills: [],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt(undefined, 'global');
+
+      expect(result.scope).toBe('global');
+    });
+
+    it('should always include orchestrator in coreAgents', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        platform: 'opencode',
+        scope: 'project',
+        projectName: 'test',
+        language: [],
+        framework: [],
+        infrastructure: '',
+        cicd: '',
+        model: '',
+        coreAgents: ['dev', 'qa'],
+        optionalAgents: [],
+        skills: [],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt('opencode', 'project');
+
+      expect(result.coreAgents[0]).toBe('orchestrator');
+      expect(result.coreAgents).toContain('dev');
+      expect(result.coreAgents).toContain('qa');
+    });
+
+    it('should not duplicate orchestrator if already selected', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        platform: 'opencode',
+        scope: 'project',
+        projectName: 'test',
+        language: [],
+        framework: [],
+        infrastructure: '',
+        cicd: '',
+        model: '',
+        coreAgents: ['orchestrator', 'dev'],
+        optionalAgents: [],
+        skills: [],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt('opencode', 'project');
+
+      const orchestratorCount = result.coreAgents.filter(a => a === 'orchestrator').length;
+      expect(orchestratorCount).toBe(1);
+    });
+
+    it('should use platform default model when model is empty', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        platform: 'claude-code',
+        scope: 'project',
+        projectName: 'test',
+        language: [],
+        framework: [],
+        infrastructure: '',
+        cicd: '',
+        model: '',
+        coreAgents: ['orchestrator'],
+        optionalAgents: [],
+        skills: [],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt('claude-code', 'project');
+
+      expect(result.model).toBe('claude-sonnet-4-20250514');
+    });
+
+    it('should use user-provided model when present', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        platform: 'opencode',
+        scope: 'project',
+        projectName: 'test',
+        language: [],
+        framework: [],
+        infrastructure: '',
+        cicd: '',
+        model: 'custom/model-v2',
+        coreAgents: ['orchestrator'],
+        optionalAgents: [],
+        skills: [],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt('opencode', 'project');
+
+      expect(result.model).toBe('custom/model-v2');
+    });
+
+    it.each([
+      ['github-copilot', 'claude-sonnet-4.6'],
+      ['github-copilot-cli', 'claude-sonnet-4.6'],
+      ['codex', 'codex-1'],
+      ['cursor', 'claude-sonnet-4.6'],
+      ['continue', 'anthropic/claude-sonnet-4-20250514'],
+      ['windsurf', 'claude-sonnet-4'],
+      ['gemini-cli', 'gemini-3.1-pro'],
+    ])('should use correct default model for %s platform', async (platform, expectedModel) => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        platform,
+        scope: 'project',
+        projectName: 'test',
+        language: [],
+        framework: [],
+        infrastructure: '',
+        cicd: '',
+        model: '',
+        coreAgents: ['orchestrator'],
+        optionalAgents: [],
+        skills: [],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt(platform, 'project');
+
+      expect(result.model).toBe(expectedModel);
+    });
+  });
+});
