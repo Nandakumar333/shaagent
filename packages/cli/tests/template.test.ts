@@ -294,4 +294,39 @@ describe('engine/template — renderAgents', () => {
       expect(content.length).toBeGreaterThan(0);
     });
   });
+
+  describe('ticket-analyser primary agent & subagents', () => {
+    it('should render ticket-analyser with mode: primary in opencode', async () => {
+      const answers = makeAnswers('opencode');
+      answers.coreAgents = ['ticket-analyser', 'har-analyzer', 'telemetry-investigator'];
+      await renderAgents(answers);
+
+      const ticketAnalyserPath = path.join(tempDir, '.opencode', 'agents', 'ticket-analyser.md');
+      expect(await fs.pathExists(ticketAnalyserPath)).toBe(true);
+      const content = await fs.readFile(ticketAnalyserPath, 'utf-8');
+      expect(content).toContain('mode: primary');
+      expect(content).toContain('TicketAnalyser');
+      expect(content).toContain('Gate 0');
+    });
+
+    it('should render har-analyzer and telemetry-investigator as subagents with correct routing references', async () => {
+      const answers = makeAnswers('opencode');
+      answers.coreAgents = ['har-analyzer', 'telemetry-investigator'];
+      await renderAgents(answers);
+
+      const harPath = path.join(tempDir, '.opencode', 'agents', 'har-analyzer.md');
+      const telPath = path.join(tempDir, '.opencode', 'agents', 'telemetry-investigator.md');
+      expect(await fs.pathExists(harPath)).toBe(true);
+      expect(await fs.pathExists(telPath)).toBe(true);
+
+      const harContent = await fs.readFile(harPath, 'utf-8');
+      expect(harContent).toContain('mode: subagent');
+      expect(harContent).toContain('correlationId');
+
+      const telContent = await fs.readFile(telPath, 'utf-8');
+      expect(telContent).toContain('mode: subagent');
+      expect(telContent).toContain('https://app.datadoghq.com/');
+      expect(telContent).toContain('https://app.ddog-gov.com/');
+    });
+  });
 });

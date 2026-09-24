@@ -7,14 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.4] - 2026-08-07
+### Added
+
+- **`TicketAnalyser` Primary AI Agent** — Dedicated primary agent for automated customer ticket triage, observability investigation, and verified Root Cause Analysis (RCA) generation.
+  - **Gate 0 MCP Pre-Flight Verification**: Validates connections for Jira MCP, Datadog EU MCP or US Bearer token credentials, and GitLab MCP. Halts with actionable setup instructions if required dependencies are missing.
+  - **Jira Intake & Attachment Processing**: Connects via Jira MCP to retrieve customer ticket descriptions, comments, and downloads attachments (`.har`, `.log`, `.txt`).
+  - **HAR Analyzer Subagent (`har-analyzer`)**: Parses HTTP Archive (`.har`) files, filters failing requests (`4xx`/`5xx`/network drops), and extracts primary `correlationId`, `x-request-id`, `traceparent`, and error payloads.
+  - **Telemetry Investigator Subagent (`telemetry-investigator`)**: Regional observability log and APM trace analysis:
+    - **EU Environment**: Routes queries to Datadog MCP server (`https://app.datadoghq.com/`).
+    - **US Environment**: Routes queries to Datadog US/Gov (`https://app.ddog-gov.com/`, API: `https://api.ddog-gov.com/`) using `datadog.us.accessToken` as a Bearer token (`Authorization: Bearer <accessToken>`). Does not require `apiKey` or `appKey`.
+  - **GitLab Code Analysis**: Reuses the `researcher` subagent via GitLab MCP to trace stack traces to exact code lines, git blame, and recent merge requests.
+  - **Anti-Hallucination & Mandatory Confidence Scoring**: Implements a strict 4-pillar evidence rubric (Correlation Linkage 30%, Concrete Stack Trace 30%, Code Logic Confirmation 20%, Environment/Deploy Match 20%) generating an explicit 0–100% confidence score. Prohibits hallucination or guessing when confidence is $< 70\%$.
+  - **Automated Jira RCA Publishing**: Formats an evidence-backed RCA report and posts it directly as a Jira ticket comment via Jira MCP.
+- **Observability Configuration**: Added `datadog`, `jira`, and `gitlab` configurations to `shaagent.config.schema.json` and manifest validation.
 
 ### Added
+
 - **Runtime Pipeline Override** — control which agents run per-task directly in the prompt. Supports `skip`, `include`, `only`, `fast`/`quick` keywords and agent name aliases. No config changes or re-scaffolding needed. Dev is never skippable; Gate 2 always applies.
 
 ## [0.2.0] - 2026-07-31
 
 ### Added
+
 - **Three new AI coding platforms** (now 9 total):
   - GitHub Copilot CLI (`.github/agents/*.agent.md`, global `~/.copilot/agents/`)
   - Windsurf (`.windsurf/rules/*.md`, workflows in `.windsurf/workflows/`)
@@ -29,17 +43,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Platform caveats surfaced during init (e.g. GitHub Copilot IDE has no official global-instructions file; Windsurf documents only a single global rules file).
 
 ### Changed
+
 - Centralized package-resource resolution in `engine/paths.ts` — templates and skills resolve correctly in both development (monorepo) and bundled (`dist/`) npm installs.
 - Per-platform plan/review/memory directories and root instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) generated for the new platforms.
 
 ## [0.1.2] - 2026-07-25
 
 ### Fixed
+
 - Skills now install to project-local directory (`.opencode/skills/`, `.claude/skills/`) instead of global home directory. Previously, selecting skills during `shaagent init` would write them to `~/.config/opencode/skills/` where they were invisible in the project.
 
 ## [0.1.0] - 2026-07-25
 
 ### Added
+
 - Initial release of `shaagent` CLI.
 - `shaagent init` — interactive setup wizard with platform detection.
 - `shaagent init --yes` — non-interactive mode with sensible defaults.
@@ -63,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI/CD pipeline with GitHub Actions (lint, test, build, publish).
 
 ### Security
+
 - Input validation for skill names (path traversal protection).
 - No network calls, no user data collection, no secrets handling.
 

@@ -8,7 +8,14 @@
     "$schema": { "type": "string" },
     "platform": {
       "type": "string",
-      "enum": ["opencode", "claude-code", "github-copilot", "codex", "cursor", "continue"],
+      "enum": [
+        "opencode",
+        "claude-code",
+        "github-copilot",
+        "codex",
+        "cursor",
+        "continue"
+      ],
       "description": "The AI coding platform to generate agent files for. All platforms use the same generic templates; only the output format (frontmatter, file structure, extensions) differs."
     },
     "model": {
@@ -46,18 +53,84 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["orchestrator", "researcher", "planner", "dev", "qa", "reviewer", "reviewer-fix"]
+            "enum": [
+              "orchestrator",
+              "debugger",
+              "researcher",
+              "planner",
+              "dev",
+              "qa",
+              "reviewer",
+              "reviewer-fix",
+              "ticket-analyser",
+              "har-analyzer",
+              "telemetry-investigator"
+            ]
           },
-          "description": "Core pipeline agents (always sequential)"
+          "description": "Core pipeline agents"
         },
         "optional": {
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["security", "architecture-reviewer", "project-memory-creator"]
+            "enum": [
+              "security",
+              "architecture-reviewer",
+              "project-memory-creator"
+            ]
           },
           "description": "Optional agents invoked conditionally"
         }
+      }
+    },
+    "datadog": {
+      "type": "object",
+      "description": "Datadog configuration for EU and US environments",
+      "properties": {
+        "eu": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "default": "https://app.datadoghq.com/"
+            },
+            "site": { "type": "string", "default": "datadoghq.com" },
+            "useMcp": { "type": "boolean", "default": true }
+          }
+        },
+        "us": {
+          "type": "object",
+          "description": "Datadog US GovCloud instance using Bearer Access Token authentication",
+          "properties": {
+            "url": { "type": "string", "default": "https://app.ddog-gov.com/" },
+            "apiUrl": {
+              "type": "string",
+              "default": "https://api.ddog-gov.com/"
+            },
+            "site": { "type": "string", "default": "ddog-gov.com" },
+            "accessToken": {
+              "type": "string",
+              "description": "Bearer token used in Authorization: Bearer <accessToken>"
+            }
+          },
+          "required": ["accessToken"]
+        }
+      }
+    },
+    "jira": {
+      "type": "object",
+      "description": "Jira configuration for ticket analysis and comment publishing",
+      "properties": {
+        "url": { "type": "string" },
+        "projectKey": { "type": "string" }
+      }
+    },
+    "gitlab": {
+      "type": "object",
+      "description": "GitLab configuration for codebase investigation",
+      "properties": {
+        "url": { "type": "string" },
+        "projectId": { "type": "string" }
       }
     },
     "skills": {
@@ -67,7 +140,14 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["graphify", "caveman", "review", "tdd", "security-scan", "arch-review"]
+            "enum": [
+              "graphify",
+              "caveman",
+              "review",
+              "tdd",
+              "security-scan",
+              "arch-review"
+            ]
           }
         }
       }

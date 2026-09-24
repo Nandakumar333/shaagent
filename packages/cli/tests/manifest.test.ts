@@ -189,5 +189,30 @@ describe('engine/manifest', () => {
       const bad = { ...mockAnswers, skills: ['nonexistent-skill'] };
       await expect(saveConfig(bad)).rejects.toThrow('Invalid');
     });
+
+    it('should accept ticket-analyser, har-analyzer, and telemetry-investigator as core agents', async () => {
+      const answers = {
+        ...mockAnswers,
+        coreAgents: ['ticket-analyser', 'har-analyzer', 'telemetry-investigator'],
+      };
+      await expect(saveConfig(answers)).resolves.not.toThrow();
+    });
+
+    it('should validate datadog config object if provided', async () => {
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      await fs.writeJson(configPath, { platform: 'opencode', datadog: 'not-an-object' });
+      await expect(loadConfig()).rejects.toThrow('datadog');
+
+      await fs.writeJson(configPath, {
+        platform: 'opencode',
+        datadog: {
+          eu: { url: 'https://app.datadoghq.com/' },
+          us: { url: 'https://app.ddog-gov.com/', accessToken: 'test-token' },
+        },
+      });
+      const loaded = await loadConfig();
+      expect(loaded).not.toBeNull();
+      expect((loaded as any).datadog.us.url).toBe('https://app.ddog-gov.com/');
+    });
   });
 });

@@ -36,10 +36,10 @@ the correct agent configuration files tailored to your AI coding platform.
 
 Most developers have either Node.js or Python. Shipping on both ensures zero friction:
 
-| Runtime | Command              | Best for                         |
-|---------|----------------------|----------------------------------|
-| Node    | `npx shaagent init`  | JS/TS repos, frontend teams      |
-| Python  | `pip install shaagent && shaagent init` | Python repos, data teams |
+| Runtime | Command                                 | Best for                    |
+| ------- | --------------------------------------- | --------------------------- |
+| Node    | `npx shaagent init`                     | JS/TS repos, frontend teams |
+| Python  | `pip install shaagent && shaagent init` | Python repos, data teams    |
 
 Both CLIs are thin wrappers that call the same **template engine** (TypeScript compiled to CJS,
 bundled with `pkg` or `esbuild` for the npm package; ported/generated for pip via `pyproject.toml`).
@@ -78,6 +78,9 @@ shaagent/
 │   └── generic/                    # ← SINGLE template set for ALL platforms
 │       └── agents/
 │           ├── orchestrator.md.hbs
+│           ├── ticket-analyser.md.hbs
+│           ├── har-analyzer.md.hbs
+│           ├── telemetry-investigator.md.hbs
 │           ├── debugger.md.hbs
 │           ├── researcher.md.hbs
 │           ├── planner.md.hbs
@@ -121,22 +124,23 @@ The template engine follows this flow:
 ```
 
 ### What the Generic Template Contains
+
 - YAML frontmatter: `name`, `description`, `model` (Handlebars variable)
 - Markdown body: full agent instructions (platform-agnostic)
 
 ### What the Platform Formatter Does
 
-| Platform | Frontmatter Transform | File Extension | Output Location |
-|----------|----------------------|----------------|-----------------|
-| OpenCode | Adds `mode`, `temperature`, `permission` | `.md` | `.opencode/agents/` |
-| Claude Code | Strips frontmatter, adds HTML comment | `.md` | `.claude/agents/` + root `CLAUDE.md` |
-| GitHub Copilot | Converts to `applyTo` frontmatter | `.instructions.md` | `.github/instructions/` + root `AGENTS.md` |
-| GitHub Copilot CLI | Converts to `name`, `description` frontmatter | `.agent.md` | `.github/agents/` |
-| Codex | Merges ALL into single file | `AGENTS.md` | repo root |
-| Cursor | Converts to `description`, `globs`, `alwaysApply` | `.mdc` | `.cursor/rules/` |
-| Continue | Plain markdown with title header | `.md` | `.continue/prompts/` |
-| Windsurf | Converts to `trigger`, `description` frontmatter | `.md` | `.windsurf/rules/` |
-| Gemini CLI | Strips frontmatter, adds HTML comment | `.md` | `.gemini/agents/` + root `GEMINI.md` |
+| Platform           | Frontmatter Transform                             | File Extension     | Output Location                            |
+| ------------------ | ------------------------------------------------- | ------------------ | ------------------------------------------ |
+| OpenCode           | Adds `mode`, `temperature`, `permission`          | `.md`              | `.opencode/agents/`                        |
+| Claude Code        | Strips frontmatter, adds HTML comment             | `.md`              | `.claude/agents/` + root `CLAUDE.md`       |
+| GitHub Copilot     | Converts to `applyTo` frontmatter                 | `.instructions.md` | `.github/instructions/` + root `AGENTS.md` |
+| GitHub Copilot CLI | Converts to `name`, `description` frontmatter     | `.agent.md`        | `.github/agents/`                          |
+| Codex              | Merges ALL into single file                       | `AGENTS.md`        | repo root                                  |
+| Cursor             | Converts to `description`, `globs`, `alwaysApply` | `.mdc`             | `.cursor/rules/`                           |
+| Continue           | Plain markdown with title header                  | `.md`              | `.continue/prompts/`                       |
+| Windsurf           | Converts to `trigger`, `description` frontmatter  | `.md`              | `.windsurf/rules/`                         |
+| Gemini CLI         | Strips frontmatter, adds HTML comment             | `.md`              | `.gemini/agents/` + root `GEMINI.md`       |
 
 Under **global** scope the output location moves to the platform's home-directory equivalent
 (e.g. `~/.config/opencode/agents/`, `~/.claude/agents/`, `~/.copilot/agents/`); the frontmatter
@@ -146,12 +150,12 @@ transform and extension are unchanged.
 
 Some platforms expect a root file that references individual agents:
 
-| Platform | Root File | Content |
-|----------|-----------|---------|
-| Claude Code | `CLAUDE.md` | `@.claude/agents/orchestrator.md` imports |
+| Platform       | Root File   | Content                                                  |
+| -------------- | ----------- | -------------------------------------------------------- |
+| Claude Code    | `CLAUDE.md` | `@.claude/agents/orchestrator.md` imports                |
 | GitHub Copilot | `AGENTS.md` | Pipeline overview + reference to `.github/instructions/` |
-| Codex | `AGENTS.md` | Full merged content (all agents in one file) |
-| Gemini CLI | `GEMINI.md` | `@.gemini/agents/*.md` imports + project context |
+| Codex          | `AGENTS.md` | Full merged content (all agents in one file)             |
+| Gemini CLI     | `GEMINI.md` | `@.gemini/agents/*.md` imports + project context         |
 
 ---
 
@@ -249,17 +253,17 @@ The Debugger only ever creates and then removes temporary reproduction files; it
 
 ## Platform → File Mapping
 
-| Platform | Agent files location (project) | Global location | Root instruction file | Extension |
-|----------|-------------------------------|-----------------|----------------------|-----------|
-| OpenCode | `.opencode/agents/` | `~/.config/opencode/agents/` | — | `.md` |
-| Claude Code | `.claude/agents/` | `~/.claude/agents/` | `CLAUDE.md` (with `@` imports) | `.md` |
-| GitHub Copilot | `.github/instructions/` | `~/.config/github-copilot/instructions/` * | `AGENTS.md` (repo root) | `.instructions.md` |
-| GitHub Copilot CLI | `.github/agents/` | `~/.copilot/agents/` | — | `.agent.md` |
-| Codex (OpenAI) | repo root (merged) | `~/.codex/AGENTS.md` | `AGENTS.md` (all-in-one) | `.md` |
-| Cursor | `.cursor/rules/` | `~/.cursor/rules/` | — | `.mdc` |
-| Continue | `.continue/prompts/` | `~/.continue/prompts/` | — | `.md` |
-| Windsurf | `.windsurf/rules/` | `~/.windsurf/rules/` * | — | `.md` |
-| Gemini CLI | `.gemini/agents/` | `~/.gemini/agents/` | `GEMINI.md` (with `@` imports) | `.md` |
+| Platform           | Agent files location (project) | Global location                            | Root instruction file          | Extension          |
+| ------------------ | ------------------------------ | ------------------------------------------ | ------------------------------ | ------------------ |
+| OpenCode           | `.opencode/agents/`            | `~/.config/opencode/agents/`               | —                              | `.md`              |
+| Claude Code        | `.claude/agents/`              | `~/.claude/agents/`                        | `CLAUDE.md` (with `@` imports) | `.md`              |
+| GitHub Copilot     | `.github/instructions/`        | `~/.config/github-copilot/instructions/` * | `AGENTS.md` (repo root)        | `.instructions.md` |
+| GitHub Copilot CLI | `.github/agents/`              | `~/.copilot/agents/`                       | —                              | `.agent.md`        |
+| Codex (OpenAI)     | repo root (merged)             | `~/.codex/AGENTS.md`                       | `AGENTS.md` (all-in-one)       | `.md`              |
+| Cursor             | `.cursor/rules/`               | `~/.cursor/rules/`                         | —                              | `.mdc`             |
+| Continue           | `.continue/prompts/`           | `~/.continue/prompts/`                     | —                              | `.md`              |
+| Windsurf           | `.windsurf/rules/`             | `~/.windsurf/rules/` *                     | —                              | `.md`              |
+| Gemini CLI         | `.gemini/agents/`              | `~/.gemini/agents/`                        | `GEMINI.md` (with `@` imports) | `.md`              |
 
 \* No officially documented per-file global location — shaagent writes a best-effort path and
 surfaces a caveat during init.
@@ -271,10 +275,10 @@ surfaces a caveat during init.
 Every install resolves to one of two scopes, chosen via `--project` (default), `--global`, or
 the interactive scope prompt:
 
-| Scope   | Base directory      | Committed with code? | Use case                          |
-|---------|---------------------|----------------------|-----------------------------------|
-| project | `process.cwd()`     | yes                  | per-repo agent setup, team-shared |
-| global  | `os.homedir()`      | no                   | one setup applied to every repo   |
+| Scope   | Base directory  | Committed with code? | Use case                          |
+| ------- | --------------- | -------------------- | --------------------------------- |
+| project | `process.cwd()` | yes                  | per-repo agent setup, team-shared |
+| global  | `os.homedir()`  | no                   | one setup applied to every repo   |
 
 `getPlatformPaths(platform, scope)` resolves the correct `agentsDir`, `skillsDir`, root
 instruction file, and any platform caveat `note` for the chosen scope. The `note` is printed to
@@ -295,16 +299,17 @@ skills/<skill-name>/
 
 ### Built-in skills
 
-| Skill          | Purpose                                                    |
-|----------------|------------------------------------------------------------|
-| `graphify`     | Turn any codebase/docs into a queryable knowledge graph    |
-| `caveman`      | Simplify complex code to minimal working examples          |
-| `tdd`          | Enforce Red-Green-Refactor TDD cycles                      |
-| `security-scan`| OWASP-aligned security audit for code changes              |
-| `arch-review`  | Architecture fitness function evaluation                   |
-| `review`       | Systematic code review for distributed microservices       |
+| Skill           | Purpose                                                 |
+| --------------- | ------------------------------------------------------- |
+| `graphify`      | Turn any codebase/docs into a queryable knowledge graph |
+| `caveman`       | Simplify complex code to minimal working examples       |
+| `tdd`           | Enforce Red-Green-Refactor TDD cycles                   |
+| `security-scan` | OWASP-aligned security audit for code changes           |
+| `arch-review`   | Architecture fitness function evaluation                |
+| `review`        | Systematic code review for distributed microservices    |
 
 Skills install to the platform-correct path:
+
 - OpenCode: `~/.config/opencode/skills/<name>/SKILL.md`
 - Claude Code: `~/.claude/skills/<name>/SKILL.md`
 - GitHub Copilot: `.github/copilot-skills/<name>/SKILL.md`
@@ -330,7 +335,16 @@ Skills install to the platform-correct path:
     "cicd": "GitHub Actions"
   },
   "agents": {
-    "core": ["orchestrator", "debugger", "researcher", "planner", "dev", "qa", "reviewer", "reviewer-fix"],
+    "core": [
+      "orchestrator",
+      "debugger",
+      "researcher",
+      "planner",
+      "dev",
+      "qa",
+      "reviewer",
+      "reviewer-fix"
+    ],
     "optional": ["security", "architecture-reviewer"]
   },
   "skills": {
@@ -431,13 +445,13 @@ $ npx shaagent init
 
 ## Platform Compatibility Matrix
 
-| Feature | OpenCode | Claude Code | GH Copilot | GH Copilot CLI | Codex | Cursor | Continue | Windsurf | Gemini CLI |
-|---------|----------|-------------|------------|----------------|-------|--------|----------|----------|------------|
-| Individual agent files | ✅ | ✅ | ✅ | ✅ | ❌ (merged) | ✅ | ✅ | ✅ | ✅ |
-| YAML frontmatter | ✅ | ❌ | ✅ (`applyTo`) | ✅ (`name`) | ❌ | ✅ | ❌ | ✅ (`trigger`) | ❌ |
-| Root instruction file | ❌ | ✅ `CLAUDE.md` | ✅ `AGENTS.md` | ❌ | ✅ `AGENTS.md` | ❌ | ❌ | ❌ | ✅ `GEMINI.md` |
-| Permission system | ✅ (native) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Mode (primary/subagent) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ (`trigger`) | ❌ |
-| Path-scoped rules | ❌ | ✅ (`paths:`) | ✅ (`applyTo:`) | ❌ | ❌ | ✅ (`globs:`) | ❌ | ❌ | ❌ |
-| Skills support | ✅ (native) | ✅ (skills/) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Global scope | ✅ | ✅ | ⚠ best-effort | ✅ | ✅ | ✅ | ✅ | ⚠ best-effort | ✅ |
+| Feature                 | OpenCode    | Claude Code    | GH Copilot      | GH Copilot CLI | Codex          | Cursor        | Continue | Windsurf       | Gemini CLI     |
+| ----------------------- | ----------- | -------------- | --------------- | -------------- | -------------- | ------------- | -------- | -------------- | -------------- |
+| Individual agent files  | ✅          | ✅             | ✅              | ✅             | ❌ (merged)    | ✅            | ✅       | ✅             | ✅             |
+| YAML frontmatter        | ✅          | ❌             | ✅ (`applyTo`)  | ✅ (`name`)    | ❌             | ✅            | ❌       | ✅ (`trigger`) | ❌             |
+| Root instruction file   | ❌          | ✅ `CLAUDE.md` | ✅ `AGENTS.md`  | ❌             | ✅ `AGENTS.md` | ❌            | ❌       | ❌             | ✅ `GEMINI.md` |
+| Permission system       | ✅ (native) | ❌             | ❌              | ❌             | ❌             | ❌            | ❌       | ❌             | ❌             |
+| Mode (primary/subagent) | ✅          | ❌             | ❌              | ❌             | ❌             | ❌            | ❌       | ✅ (`trigger`) | ❌             |
+| Path-scoped rules       | ❌          | ✅ (`paths:`)  | ✅ (`applyTo:`) | ❌             | ❌             | ✅ (`globs:`) | ❌       | ❌             | ❌             |
+| Skills support          | ✅ (native) | ✅ (skills/)   | ❌              | ❌             | ❌             | ❌            | ❌       | ❌             | ❌             |
+| Global scope            | ✅          | ✅             | ⚠ best-effort   | ✅             | ✅             | ✅            | ✅       | ⚠ best-effort  | ✅             |
