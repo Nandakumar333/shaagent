@@ -17,8 +17,8 @@
  *   ../../skills/            ← monorepo root skills
  */
 
-import path from 'path';
-import fs from 'fs';
+import path from "path";
+import fs from "fs";
 
 /**
  * Find the package root by walking up from __dirname until we find package.json
@@ -30,11 +30,11 @@ function findPackageRoot(): string {
   let depth = 0;
 
   while (depth < maxDepth) {
-    const pkgPath = path.join(dir, 'package.json');
+    const pkgPath = path.join(dir, "package.json");
     if (fs.existsSync(pkgPath)) {
       try {
-        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-        if (pkg.name === 'shaagent' || pkg.name === '@shaagent/cli') {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+        if (pkg.name === "shaagent" || pkg.name === "@shaagent/cli") {
           return dir;
         }
       } catch {
@@ -48,7 +48,7 @@ function findPackageRoot(): string {
   }
 
   // Fallback: assume standard monorepo structure
-  return path.resolve(__dirname, '../..');
+  return path.resolve(__dirname, "../..");
 }
 
 let _packageRoot: string | null = null;
@@ -73,31 +73,35 @@ export function getPackageRoot(): string {
 export function getTemplatesRoot(): string {
   const pkgRoot = getPackageRoot();
 
-  // 1. Sibling to the running script (dist/templates when bundled)
-  const siblingTemplates = path.join(__dirname, 'templates');
-  if (fs.existsSync(siblingTemplates)) {
-    return siblingTemplates;
+  // 1. In bundled mode, prefer sibling or package dist templates
+  if (process.env.SHAAGENT_BUNDLED === "true") {
+    const siblingTemplates = path.join(__dirname, "templates");
+    if (fs.existsSync(siblingTemplates)) return siblingTemplates;
+
+    const distTemplates = path.join(pkgRoot, "dist", "templates");
+    if (fs.existsSync(distTemplates)) return distTemplates;
   }
 
-  // 2. Inside dist/ under the package root (npm install)
-  const distTemplates = path.join(pkgRoot, 'dist', 'templates');
-  if (fs.existsSync(distTemplates)) {
-    return distTemplates;
-  }
-
-  // 3. At the package root level
-  const localTemplates = path.join(pkgRoot, 'templates');
-  if (fs.existsSync(localTemplates)) {
-    return localTemplates;
-  }
-
-  // 4. Development: templates are at the monorepo root
-  const monorepoTemplates = path.resolve(pkgRoot, '../../templates');
+  // 2. Development mode: monorepo root templates is the source of truth
+  const monorepoTemplates = path.resolve(pkgRoot, "../../templates");
   if (fs.existsSync(monorepoTemplates)) {
     return monorepoTemplates;
   }
 
-  // Fallback — return the sibling path (most likely in production)
+  // 3. At the package root level
+  const localTemplates = path.join(pkgRoot, "templates");
+  if (fs.existsSync(localTemplates)) {
+    return localTemplates;
+  }
+
+  // 4. Fallback to dist under package root (e.g. npm-installed package)
+  const distTemplates = path.join(pkgRoot, "dist", "templates");
+  if (fs.existsSync(distTemplates)) {
+    return distTemplates;
+  }
+
+  // 5. Fallback — return sibling path
+  const siblingTemplates = path.join(__dirname, "templates");
   return siblingTemplates;
 }
 
@@ -109,31 +113,35 @@ export function getTemplatesRoot(): string {
 export function getSkillsRoot(): string {
   const pkgRoot = getPackageRoot();
 
-  // 1. Sibling to the running script (dist/skills when bundled)
-  const siblingSkills = path.join(__dirname, 'skills');
-  if (fs.existsSync(siblingSkills)) {
-    return siblingSkills;
+  // 1. In bundled mode, prefer sibling or package dist skills
+  if (process.env.SHAAGENT_BUNDLED === "true") {
+    const siblingSkills = path.join(__dirname, "skills");
+    if (fs.existsSync(siblingSkills)) return siblingSkills;
+
+    const distSkills = path.join(pkgRoot, "dist", "skills");
+    if (fs.existsSync(distSkills)) return distSkills;
   }
 
-  // 2. Inside dist/ under the package root (npm install)
-  const distSkills = path.join(pkgRoot, 'dist', 'skills');
-  if (fs.existsSync(distSkills)) {
-    return distSkills;
-  }
-
-  // 3. At the package root level
-  const localSkills = path.join(pkgRoot, 'skills');
-  if (fs.existsSync(localSkills)) {
-    return localSkills;
-  }
-
-  // 4. Development: skills are at the monorepo root
-  const monorepoSkills = path.resolve(pkgRoot, '../../skills');
+  // 2. Development mode: monorepo root skills is the source of truth
+  const monorepoSkills = path.resolve(pkgRoot, "../../skills");
   if (fs.existsSync(monorepoSkills)) {
     return monorepoSkills;
   }
 
-  // Fallback
+  // 3. At the package root level
+  const localSkills = path.join(pkgRoot, "skills");
+  if (fs.existsSync(localSkills)) {
+    return localSkills;
+  }
+
+  // 4. Fallback to dist under package root
+  const distSkills = path.join(pkgRoot, "dist", "skills");
+  if (fs.existsSync(distSkills)) {
+    return distSkills;
+  }
+
+  // 5. Fallback
+  const siblingSkills = path.join(__dirname, "skills");
   return siblingSkills;
 }
 

@@ -25201,24 +25201,58 @@ var dist_default14 = inquirer;
 // src/prompts.ts
 var PLATFORMS = [
   { name: "OpenCode            \u2014 .opencode/agents/*.md", value: "opencode" },
-  { name: "Claude Code         \u2014 CLAUDE.md + .claude/agents/*.md", value: "claude-code" },
-  { name: "GitHub Copilot      \u2014 AGENTS.md + .github/instructions/*.md", value: "github-copilot" },
-  { name: "GitHub Copilot CLI  \u2014 .github/agents/*.agent.md", value: "github-copilot-cli" },
+  {
+    name: "Claude Code         \u2014 CLAUDE.md + .claude/agents/*.md",
+    value: "claude-code"
+  },
+  {
+    name: "GitHub Copilot      \u2014 AGENTS.md + .github/instructions/*.md",
+    value: "github-copilot"
+  },
+  {
+    name: "GitHub Copilot CLI  \u2014 .github/agents/*.agent.md",
+    value: "github-copilot-cli"
+  },
   { name: "Codex (OpenAI)      \u2014 single AGENTS.md (merged)", value: "codex" },
   { name: "Cursor              \u2014 .cursor/rules/*.mdc", value: "cursor" },
   { name: "Continue            \u2014 .continue/prompts/*.md", value: "continue" },
   { name: "Windsurf            \u2014 .windsurf/rules/*.md", value: "windsurf" },
-  { name: "Gemini CLI          \u2014 GEMINI.md + .gemini/agents/*.md", value: "gemini-cli" }
+  {
+    name: "Gemini CLI          \u2014 GEMINI.md + .gemini/agents/*.md",
+    value: "gemini-cli"
+  }
 ];
 var SCOPES = [
-  { name: "Project \u2014 install into this repository (.claude/, .cursor/, ... \u2014 committed with the code)", value: "project" },
-  { name: "Global  \u2014 install once for this user (home directory \u2014 applies to every project)", value: "global" }
+  {
+    name: "Project \u2014 install into this repository (.claude/, .cursor/, ... \u2014 committed with the code)",
+    value: "project"
+  },
+  {
+    name: "Global  \u2014 install once for this user (home directory \u2014 applies to every project)",
+    value: "global"
+  }
 ];
 var CORE_AGENTS = [
-  { name: "Orchestrator  (required, always included)", value: "orchestrator", checked: true },
-  { name: "Ticket Analyser (Primary agent for Jira, HAR, Datadog EU/US, GitLab RCA)", value: "ticket-analyser", checked: true },
-  { name: "HAR Analyzer (HTTP Archive parser & correlation extractor)", value: "har-analyzer", checked: true },
-  { name: "Telemetry Investigator (Datadog EU MCP vs US ddog-gov.com)", value: "telemetry-investigator", checked: true },
+  {
+    name: "Orchestrator  (required, always included)",
+    value: "orchestrator",
+    checked: true
+  },
+  {
+    name: "Ticket Analyser (Primary agent for Jira, HAR, Datadog EU/US, GitLab RCA)",
+    value: "ticket-analyser",
+    checked: true
+  },
+  {
+    name: "HAR Analyzer (HTTP Archive parser & correlation extractor)",
+    value: "har-analyzer",
+    checked: true
+  },
+  {
+    name: "Telemetry Investigator (Datadog EU MCP vs US ddog-gov.com)",
+    value: "telemetry-investigator",
+    checked: true
+  },
   { name: "Debugger", value: "debugger", checked: true },
   { name: "Researcher", value: "researcher", checked: true },
   { name: "Planner", value: "planner", checked: true },
@@ -25229,16 +25263,48 @@ var CORE_AGENTS = [
 ];
 var OPTIONAL_AGENTS = [
   { name: "Security Auditor", value: "security", checked: false },
-  { name: "Architecture Reviewer", value: "architecture-reviewer", checked: false },
-  { name: "Project Memory Creator", value: "project-memory-creator", checked: false }
+  {
+    name: "Architecture Reviewer",
+    value: "architecture-reviewer",
+    checked: false
+  },
+  {
+    name: "Project Memory Creator",
+    value: "project-memory-creator",
+    checked: false
+  }
 ];
 var SKILLS = [
-  { name: "graphify      \u2014 codebase knowledge graph (service map, dependencies)", value: "graphify", checked: true },
-  { name: "caveman       \u2014 token compression + code simplification", value: "caveman", checked: true },
-  { name: "review        \u2014 systematic code review checklist (.NET-focused)", value: "review", checked: true },
-  { name: "tdd           \u2014 Red-Green-Refactor TDD cycle (xUnit/pytest/Vitest)", value: "tdd", checked: false },
-  { name: "security-scan \u2014 OWASP-aligned security audit for .NET", value: "security-scan", checked: false },
-  { name: "arch-review   \u2014 architecture fitness functions for microservices", value: "arch-review", checked: false }
+  {
+    name: "graphify      \u2014 codebase knowledge graph (service map, dependencies)",
+    value: "graphify",
+    checked: true
+  },
+  {
+    name: "caveman       \u2014 token compression + code simplification",
+    value: "caveman",
+    checked: true
+  },
+  {
+    name: "review        \u2014 systematic code review checklist (.NET-focused)",
+    value: "review",
+    checked: true
+  },
+  {
+    name: "tdd           \u2014 Red-Green-Refactor TDD cycle (xUnit/pytest/Vitest)",
+    value: "tdd",
+    checked: false
+  },
+  {
+    name: "security-scan \u2014 OWASP-aligned security audit for .NET",
+    value: "security-scan",
+    checked: false
+  },
+  {
+    name: "arch-review   \u2014 architecture fitness functions for microservices",
+    value: "arch-review",
+    checked: false
+  }
 ];
 async function prompt2(platformFlag, scopeFlag) {
   const answers = await dist_default14.prompt([
@@ -25335,7 +25401,10 @@ async function prompt2(platformFlag, scopeFlag) {
     scope: scopeFlag ?? answers.scope,
     model: answers.model || getDefaultModel(answers.platform),
     // Orchestrator is always included
-    coreAgents: ["orchestrator", ...answers.coreAgents.filter((a) => a !== "orchestrator")]
+    coreAgents: [
+      "orchestrator",
+      ...answers.coreAgents.filter((a) => a !== "orchestrator")
+    ]
   };
 }
 function getDefaultModel(platform) {
@@ -25516,42 +25585,48 @@ function getPackageRoot() {
 }
 function getTemplatesRoot() {
   const pkgRoot = getPackageRoot();
-  const siblingTemplates = import_path2.default.join(__dirname, "templates");
-  if (import_fs.default.existsSync(siblingTemplates)) {
-    return siblingTemplates;
-  }
-  const distTemplates = import_path2.default.join(pkgRoot, "dist", "templates");
-  if (import_fs.default.existsSync(distTemplates)) {
-    return distTemplates;
-  }
-  const localTemplates = import_path2.default.join(pkgRoot, "templates");
-  if (import_fs.default.existsSync(localTemplates)) {
-    return localTemplates;
+  if (true) {
+    const siblingTemplates2 = import_path2.default.join(__dirname, "templates");
+    if (import_fs.default.existsSync(siblingTemplates2)) return siblingTemplates2;
+    const distTemplates2 = import_path2.default.join(pkgRoot, "dist", "templates");
+    if (import_fs.default.existsSync(distTemplates2)) return distTemplates2;
   }
   const monorepoTemplates = import_path2.default.resolve(pkgRoot, "../../templates");
   if (import_fs.default.existsSync(monorepoTemplates)) {
     return monorepoTemplates;
   }
+  const localTemplates = import_path2.default.join(pkgRoot, "templates");
+  if (import_fs.default.existsSync(localTemplates)) {
+    return localTemplates;
+  }
+  const distTemplates = import_path2.default.join(pkgRoot, "dist", "templates");
+  if (import_fs.default.existsSync(distTemplates)) {
+    return distTemplates;
+  }
+  const siblingTemplates = import_path2.default.join(__dirname, "templates");
   return siblingTemplates;
 }
 function getSkillsRoot() {
   const pkgRoot = getPackageRoot();
-  const siblingSkills = import_path2.default.join(__dirname, "skills");
-  if (import_fs.default.existsSync(siblingSkills)) {
-    return siblingSkills;
-  }
-  const distSkills = import_path2.default.join(pkgRoot, "dist", "skills");
-  if (import_fs.default.existsSync(distSkills)) {
-    return distSkills;
-  }
-  const localSkills = import_path2.default.join(pkgRoot, "skills");
-  if (import_fs.default.existsSync(localSkills)) {
-    return localSkills;
+  if (true) {
+    const siblingSkills2 = import_path2.default.join(__dirname, "skills");
+    if (import_fs.default.existsSync(siblingSkills2)) return siblingSkills2;
+    const distSkills2 = import_path2.default.join(pkgRoot, "dist", "skills");
+    if (import_fs.default.existsSync(distSkills2)) return distSkills2;
   }
   const monorepoSkills = import_path2.default.resolve(pkgRoot, "../../skills");
   if (import_fs.default.existsSync(monorepoSkills)) {
     return monorepoSkills;
   }
+  const localSkills = import_path2.default.join(pkgRoot, "skills");
+  if (import_fs.default.existsSync(localSkills)) {
+    return localSkills;
+  }
+  const distSkills = import_path2.default.join(pkgRoot, "dist", "skills");
+  if (import_fs.default.existsSync(distSkills)) {
+    return distSkills;
+  }
+  const siblingSkills = import_path2.default.join(__dirname, "skills");
   return siblingSkills;
 }
 
@@ -25579,7 +25654,11 @@ async function renderAgents(answers, options) {
   const written = [];
   const context = buildContext(answers);
   if (mergedFile) {
-    const mergedContent = await renderMergedFile(allAgents, context, answers.platform);
+    const mergedContent = await renderMergedFile(
+      allAgents,
+      context,
+      answers.platform
+    );
     const outFile = import_path3.default.join(agentsDir, platformPaths.configFile);
     if (!dryRun) {
       await import_fs_extra.default.writeFile(outFile, mergedContent, "utf-8");
@@ -25595,7 +25674,12 @@ async function renderAgents(answers, options) {
       const raw = await import_fs_extra.default.readFile(templatePath, "utf-8");
       const compiled = import_handlebars.default.compile(raw);
       let rendered = compiled(context);
-      rendered = transformForPlatform(rendered, agentName, answers.platform, context);
+      rendered = transformForPlatform(
+        rendered,
+        agentName,
+        answers.platform,
+        context
+      );
       const outFile = import_path3.default.join(agentsDir, `${agentName}${extension}`);
       if (!dryRun) {
         await import_fs_extra.default.ensureDir(import_path3.default.dirname(outFile));
@@ -25604,10 +25688,18 @@ async function renderAgents(answers, options) {
       written.push(displayPath(outFile));
     }
     if (platformPaths.rootInstructionFile) {
-      const rootContent = generateRootInstruction(allAgents, answers.platform, context);
+      const rootContent = generateRootInstruction(
+        allAgents,
+        answers.platform,
+        context
+      );
       if (!dryRun) {
         await import_fs_extra.default.ensureDir(import_path3.default.dirname(platformPaths.rootInstructionFile));
-        await import_fs_extra.default.writeFile(platformPaths.rootInstructionFile, rootContent, "utf-8");
+        await import_fs_extra.default.writeFile(
+          platformPaths.rootInstructionFile,
+          rootContent,
+          "utf-8"
+        );
       }
       written.push(displayPath(platformPaths.rootInstructionFile));
     }
@@ -25618,7 +25710,8 @@ function displayPath(absPath) {
   const cwdPrefix = process.cwd() + import_path3.default.sep;
   if (absPath.startsWith(cwdPrefix)) return absPath.slice(cwdPrefix.length);
   const home = import_os2.default.homedir() + import_path3.default.sep;
-  if (absPath.startsWith(home)) return import_path3.default.join("~", absPath.slice(home.length));
+  if (absPath.startsWith(home))
+    return import_path3.default.join("~", absPath.slice(home.length));
   return absPath;
 }
 function resolveTemplatePath(agentName) {
@@ -25763,7 +25856,9 @@ async function renderMergedFile(agents, context, _platform) {
   }
   sections.push("## Agent Roles");
   sections.push("");
-  sections.push("The following agents operate in a sequential pipeline. Each agent has a specific responsibility:");
+  sections.push(
+    "The following agents operate in a sequential pipeline. Each agent has a specific responsibility:"
+  );
   sections.push("");
   sections.push("| Agent | Role |");
   sections.push("|-------|------|");
@@ -25801,17 +25896,22 @@ function generateRootInstruction(agents, platform, context) {
     lines.push("");
     lines.push(`## Project Context`);
     if (context.techStack) lines.push(`- **Tech Stack:** ${context.techStack}`);
-    if (context.infrastructure) lines.push(`- **Infrastructure:** ${context.infrastructure}`);
+    if (context.infrastructure)
+      lines.push(`- **Infrastructure:** ${context.infrastructure}`);
     lines.push("");
     lines.push("## Multi-Agent Pipeline");
     lines.push("");
-    lines.push("This project uses a multi-agent orchestration system. Agent instructions are in `.claude/agents/`:");
+    lines.push(
+      "This project uses a multi-agent orchestration system. Agent instructions are in `.claude/agents/`:"
+    );
     lines.push("");
     for (const agent of agents) {
       lines.push(`- @.claude/agents/${agent}.md`);
     }
     lines.push("");
-    lines.push("Start by reading the **orchestrator** agent instructions when working on any ticket or feature.");
+    lines.push(
+      "Start by reading the **orchestrator** agent instructions when working on any ticket or feature."
+    );
   } else if (platform === "github-copilot") {
     lines.push(`# AGENTS.md \u2014 ${context.projectName}`);
     lines.push("");
@@ -25819,12 +25919,15 @@ function generateRootInstruction(agents, platform, context) {
     lines.push(`Agent instructions are in \`.github/agents/\`.`);
     lines.push("");
     if (context.techStack) lines.push(`**Tech Stack:** ${context.techStack}`);
-    if (context.infrastructure) lines.push(`**Infrastructure:** ${context.infrastructure}`);
+    if (context.infrastructure)
+      lines.push(`**Infrastructure:** ${context.infrastructure}`);
     lines.push("");
     lines.push("## Pipeline Order");
     lines.push("");
     lines.push("Execute agents in this sequence for feature work:");
-    lines.push("1. Researcher \u2192 2. Planner \u2192 3. Developer \u2192 4. QA \u2192 5. Reviewer \u2192 6. Review-Fix");
+    lines.push(
+      "1. Researcher \u2192 2. Planner \u2192 3. Developer \u2192 4. QA \u2192 5. Reviewer \u2192 6. Review-Fix"
+    );
     lines.push("");
     lines.push("## Agent Details");
     lines.push("");
@@ -25834,17 +25937,22 @@ function generateRootInstruction(agents, platform, context) {
     lines.push("");
     lines.push(`## Project Context`);
     if (context.techStack) lines.push(`- **Tech Stack:** ${context.techStack}`);
-    if (context.infrastructure) lines.push(`- **Infrastructure:** ${context.infrastructure}`);
+    if (context.infrastructure)
+      lines.push(`- **Infrastructure:** ${context.infrastructure}`);
     lines.push("");
     lines.push("## Multi-Agent Pipeline");
     lines.push("");
-    lines.push("This project uses a multi-agent orchestration system. Agent instructions are imported from `.gemini/agents/`:");
+    lines.push(
+      "This project uses a multi-agent orchestration system. Agent instructions are imported from `.gemini/agents/`:"
+    );
     lines.push("");
     for (const agent of agents) {
       lines.push(`@.gemini/agents/${agent}.md`);
     }
     lines.push("");
-    lines.push("Start by reading the **orchestrator** agent instructions when working on any ticket or feature.");
+    lines.push(
+      "Start by reading the **orchestrator** agent instructions when working on any ticket or feature."
+    );
   }
   return lines.join("\n") + "\n";
 }
@@ -25947,15 +26055,51 @@ function getPermissionsForAgent(agentName) {
   return perms[agentName] ?? writeAsk;
 }
 var PLATFORM_DIRS = {
-  "opencode": { plan: ".opencode/plans", review: ".opencode/reviews", memory: ".opencode/MEMORY.md" },
-  "claude-code": { plan: ".claude/plans", review: ".claude/reviews", memory: ".claude/MEMORY.md" },
-  "github-copilot": { plan: ".github/plans", review: ".github/reviews", memory: ".github/MEMORY.md" },
-  "github-copilot-cli": { plan: ".github/plans", review: ".github/reviews", memory: ".github/MEMORY.md" },
-  "codex": { plan: ".codex/plans", review: ".codex/reviews", memory: ".codex/MEMORY.md" },
-  "cursor": { plan: ".cursor/plans", review: ".cursor/reviews", memory: ".cursor/MEMORY.md" },
-  "continue": { plan: ".continue/plans", review: ".continue/reviews", memory: ".continue/MEMORY.md" },
-  "windsurf": { plan: ".windsurf/plans", review: ".windsurf/reviews", memory: ".windsurf/MEMORY.md" },
-  "gemini-cli": { plan: ".gemini/plans", review: ".gemini/reviews", memory: ".gemini/MEMORY.md" }
+  opencode: {
+    plan: ".opencode/plans",
+    review: ".opencode/reviews",
+    memory: ".opencode/MEMORY.md"
+  },
+  "claude-code": {
+    plan: ".claude/plans",
+    review: ".claude/reviews",
+    memory: ".claude/MEMORY.md"
+  },
+  "github-copilot": {
+    plan: ".github/plans",
+    review: ".github/reviews",
+    memory: ".github/MEMORY.md"
+  },
+  "github-copilot-cli": {
+    plan: ".github/plans",
+    review: ".github/reviews",
+    memory: ".github/MEMORY.md"
+  },
+  codex: {
+    plan: ".codex/plans",
+    review: ".codex/reviews",
+    memory: ".codex/MEMORY.md"
+  },
+  cursor: {
+    plan: ".cursor/plans",
+    review: ".cursor/reviews",
+    memory: ".cursor/MEMORY.md"
+  },
+  continue: {
+    plan: ".continue/plans",
+    review: ".continue/reviews",
+    memory: ".continue/MEMORY.md"
+  },
+  windsurf: {
+    plan: ".windsurf/plans",
+    review: ".windsurf/reviews",
+    memory: ".windsurf/MEMORY.md"
+  },
+  "gemini-cli": {
+    plan: ".gemini/plans",
+    review: ".gemini/reviews",
+    memory: ".gemini/MEMORY.md"
+  }
 };
 function getPlanDir(platform) {
   return PLATFORM_DIRS[platform]?.plan ?? ".ai/plans";
@@ -26585,14 +26729,31 @@ var VALID_CORE_AGENTS = [
   "har-analyzer",
   "telemetry-investigator"
 ];
-var VALID_OPTIONAL_AGENTS = ["security", "architecture-reviewer", "project-memory-creator"];
-var VALID_SKILLS = ["graphify", "caveman", "review", "tdd", "security-scan", "arch-review"];
+var VALID_OPTIONAL_AGENTS = [
+  "security",
+  "architecture-reviewer",
+  "project-memory-creator"
+];
+var VALID_SKILLS = [
+  "graphify",
+  "caveman",
+  "review",
+  "tdd",
+  "security-scan",
+  "arch-review"
+];
 function validateConfig(config) {
   const errors = [];
   if (!config.platform || typeof config.platform !== "string") {
-    errors.push({ field: "platform", message: "platform is required and must be a string" });
+    errors.push({
+      field: "platform",
+      message: "platform is required and must be a string"
+    });
   } else if (!VALID_PLATFORMS.includes(config.platform)) {
-    errors.push({ field: "platform", message: `Invalid platform "${config.platform}". Valid: ${VALID_PLATFORMS.join(", ")}` });
+    errors.push({
+      field: "platform",
+      message: `Invalid platform "${config.platform}". Valid: ${VALID_PLATFORMS.join(", ")}`
+    });
   }
   if (config.model !== void 0 && typeof config.model !== "string") {
     errors.push({ field: "model", message: "model must be a string" });
@@ -26603,10 +26764,16 @@ function validateConfig(config) {
     } else {
       const proj = config.project;
       if (proj.language !== void 0 && !Array.isArray(proj.language)) {
-        errors.push({ field: "project.language", message: "project.language must be an array" });
+        errors.push({
+          field: "project.language",
+          message: "project.language must be an array"
+        });
       }
       if (proj.framework !== void 0 && !Array.isArray(proj.framework)) {
-        errors.push({ field: "project.framework", message: "project.framework must be an array" });
+        errors.push({
+          field: "project.framework",
+          message: "project.framework must be an array"
+        });
       }
     }
   }
@@ -26617,22 +26784,34 @@ function validateConfig(config) {
       const agents = config.agents;
       if (agents.core !== void 0) {
         if (!Array.isArray(agents.core)) {
-          errors.push({ field: "agents.core", message: "agents.core must be an array" });
+          errors.push({
+            field: "agents.core",
+            message: "agents.core must be an array"
+          });
         } else {
           for (const a of agents.core) {
             if (!VALID_CORE_AGENTS.includes(a)) {
-              errors.push({ field: "agents.core", message: `Invalid core agent "${a}". Valid: ${VALID_CORE_AGENTS.join(", ")}` });
+              errors.push({
+                field: "agents.core",
+                message: `Invalid core agent "${a}". Valid: ${VALID_CORE_AGENTS.join(", ")}`
+              });
             }
           }
         }
       }
       if (agents.optional !== void 0) {
         if (!Array.isArray(agents.optional)) {
-          errors.push({ field: "agents.optional", message: "agents.optional must be an array" });
+          errors.push({
+            field: "agents.optional",
+            message: "agents.optional must be an array"
+          });
         } else {
           for (const a of agents.optional) {
             if (!VALID_OPTIONAL_AGENTS.includes(a)) {
-              errors.push({ field: "agents.optional", message: `Invalid optional agent "${a}". Valid: ${VALID_OPTIONAL_AGENTS.join(", ")}` });
+              errors.push({
+                field: "agents.optional",
+                message: `Invalid optional agent "${a}". Valid: ${VALID_OPTIONAL_AGENTS.join(", ")}`
+              });
             }
           }
         }
@@ -26646,11 +26825,17 @@ function validateConfig(config) {
       const skills = config.skills;
       if (skills.installed !== void 0) {
         if (!Array.isArray(skills.installed)) {
-          errors.push({ field: "skills.installed", message: "skills.installed must be an array" });
+          errors.push({
+            field: "skills.installed",
+            message: "skills.installed must be an array"
+          });
         } else {
           for (const s of skills.installed) {
             if (!VALID_SKILLS.includes(s)) {
-              errors.push({ field: "skills.installed", message: `Invalid skill "${s}". Valid: ${VALID_SKILLS.join(", ")}` });
+              errors.push({
+                field: "skills.installed",
+                message: `Invalid skill "${s}". Valid: ${VALID_SKILLS.join(", ")}`
+              });
             }
           }
         }
@@ -26711,10 +26896,12 @@ async function loadConfig() {
   const errors = validateConfig(config);
   if (errors.length > 0) {
     const msgs = errors.map((e) => `  - ${e.field}: ${e.message}`).join("\n");
-    throw new Error(`Invalid ${CONFIG_FILE}:
+    throw new Error(
+      `Invalid ${CONFIG_FILE}:
 ${msgs}
 
-Run "shaagent init" to regenerate.`);
+Run "shaagent init" to regenerate.`
+    );
   }
   return config;
 }
