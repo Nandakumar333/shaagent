@@ -33,7 +33,7 @@
     "read-pkg-up": "^11.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^8.57.1",
+    "@eslint/js": "^10.0.1",
     "@types/fs-extra": "^11.0.4",
     "@types/handlebars": "^4.1.0",
     "@types/inquirer": "^9.0.10",
