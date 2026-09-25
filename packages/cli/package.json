@@ -1,6 +1,6 @@
 {
   "name": "shaagent",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Scaffold production-grade multi-agent AI systems into any repository",
   "bin": {
     "shaagent": "./dist/index.js"

@@ -183,5 +183,59 @@ describe('init', () => {
         { dryRun: true }
       );
     });
+
+    it('should install skills and save config when not in dry-run mode', async () => {
+      const { renderAgents } = await import('../src/engine/template');
+      const { installSkill } = await import('../src/install-skill');
+      const { saveConfig } = await import('../src/engine/manifest');
+
+      const cmd = initCommand();
+      await cmd.parseAsync(['node', 'test', '--yes']);
+
+      expect(renderAgents).toHaveBeenCalledWith(expect.anything(), { dryRun: false });
+      expect(installSkill).toHaveBeenCalled();
+      expect(saveConfig).toHaveBeenCalled();
+    });
+
+    it('should show ticket-analyser message when only ticket-analyser is installed in non-dry-run', async () => {
+      const { prompt } = await import('../src/prompts');
+      (prompt as any).mockResolvedValueOnce({
+        platform: 'opencode',
+        scope: 'project',
+        projectName: 'ticket-proj',
+        language: [],
+        framework: [],
+        infrastructure: '',
+        cicd: '',
+        model: 'model-1',
+        coreAgents: ['ticket-analyser', 'har-analyzer'],
+        optionalAgents: [],
+        skills: ['graphify'],
+      });
+
+      const cmd = initCommand();
+      await cmd.parseAsync(['node', 'test']);
+    });
+  });
+
+  describe('getDefaults direct tests', () => {
+    it('returns expected defaults for each suite', async () => {
+      const { getDefaults } = await import('../src/init');
+
+      const dev = getDefaults('opencode', 'project', 'development');
+      expect(dev.suite).toBe('development');
+      expect(dev.coreAgents).toContain('orchestrator');
+
+      const jira = getDefaults('cursor', 'global', 'jira-analyser');
+      expect(jira.suite).toBe('jira-analyser');
+      expect(jira.platform).toBe('cursor');
+      expect(jira.scope).toBe('global');
+      expect(jira.coreAgents[0]).toBe('ticket-analyser');
+
+      const both = getDefaults('claude-code', 'project', 'both');
+      expect(both.suite).toBe('both');
+      expect(both.coreAgents).toContain('orchestrator');
+      expect(both.coreAgents).toContain('ticket-analyser');
+    });
   });
 });

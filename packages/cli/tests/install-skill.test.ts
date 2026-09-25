@@ -2,7 +2,10 @@
  * Unit tests for install-skill.ts — skill validation and installation.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'fs-extra';
+import path from 'path';
+import os from 'os';
 import { validateSkillName } from '../src/install-skill';
 
 describe('install-skill', () => {
@@ -49,6 +52,57 @@ describe('install-skill', () => {
     it('should accept names at the max length boundary', () => {
       const maxName = 'a'.repeat(64);
       expect(validateSkillName(maxName)).toBe(true);
+    });
+  });
+
+  describe('installSkill', () => {
+    let tempDir: string;
+    let originalCwd: string;
+
+    beforeEach(async () => {
+      originalCwd = process.cwd();
+      tempDir = path.join(os.tmpdir(), `shaagent-skill-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      await fs.ensureDir(tempDir);
+      process.chdir(tempDir);
+    });
+
+    afterEach(async () => {
+      process.chdir(originalCwd);
+      await fs.remove(tempDir);
+    });
+
+    it('should ignore invalid skill names safely', async () => {
+      const { installSkill } = await import('../src/install-skill');
+      await expect(installSkill('../invalid', 'opencode', 'project')).resolves.toBeUndefined();
+    });
+
+    it('should warn and skip nonexistent skill names', async () => {
+      const { installSkill } = await import('../src/install-skill');
+      await expect(installSkill('nonexistent_skill_xyz', 'opencode', 'project')).resolves.toBeUndefined();
+    });
+
+    it('should copy existing built-in skill to target platform dir', async () => {
+      const { installSkill } = await import('../src/install-skill');
+      await installSkill('graphify', 'opencode', 'project');
+      const installed = path.join(tempDir, '.opencode', 'skills', 'graphify');
+      expect(await fs.pathExists(installed)).toBe(true);
+    });
+  });
+
+  describe('skillCommand', () => {
+    it('creates skill command with install and list subcommands', async () => {
+      const { skillCommand } = await import('../src/install-skill');
+      const cmd = skillCommand();
+      expect(cmd.name()).toBe('skill');
+      const subcmds = cmd.commands.map(c => c.name());
+      expect(subcmds).toContain('install');
+      expect(subcmds).toContain('list');
+    });
+
+    it('executes list subcommand without error', async () => {
+      const { skillCommand } = await import('../src/install-skill');
+      const cmd = skillCommand();
+      await cmd.parseAsync(['node', 'test', 'list']);
     });
   });
 });

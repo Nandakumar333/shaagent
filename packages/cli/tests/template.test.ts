@@ -328,5 +328,41 @@ describe('engine/template — renderAgents', () => {
       expect(telContent).toContain('https://app.datadoghq.com/');
       expect(telContent).toContain('https://app.ddog-gov.com/');
     });
+
+    it('should generate CLAUDE.md referencing ticket-analyser when orchestrator is absent', async () => {
+      const answers = makeAnswers('claude-code');
+      answers.coreAgents = ['ticket-analyser', 'har-analyzer'];
+      await renderAgents(answers);
+
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
+      expect(await fs.pathExists(claudeMdPath)).toBe(true);
+      const content = await fs.readFile(claudeMdPath, 'utf-8');
+      expect(content).toContain('ticket-analyser');
+      expect(content).toContain('Start by reading the **ticket-analyser** agent instructions');
+    });
+
+    it('should generate GEMINI.md referencing ticket-analyser when orchestrator is absent', async () => {
+      const answers = makeAnswers('gemini-cli');
+      answers.coreAgents = ['ticket-analyser', 'telemetry-investigator'];
+      await renderAgents(answers);
+
+      const geminiMdPath = path.join(tempDir, 'GEMINI.md');
+      expect(await fs.pathExists(geminiMdPath)).toBe(true);
+      const content = await fs.readFile(geminiMdPath, 'utf-8');
+      expect(content).toContain('@.gemini/agents/ticket-analyser.md');
+      expect(content).toContain('Start by reading the **ticket-analyser** agent instructions');
+    });
+
+    it('should generate AGENTS.md with Ticket Analyser pipeline in github-copilot', async () => {
+      const answers = makeAnswers('github-copilot');
+      answers.coreAgents = ['ticket-analyser', 'har-analyzer', 'telemetry-investigator'];
+      await renderAgents(answers);
+
+      const agentsMdPath = path.join(tempDir, 'AGENTS.md');
+      expect(await fs.pathExists(agentsMdPath)).toBe(true);
+      const content = await fs.readFile(agentsMdPath, 'utf-8');
+      expect(content).toContain('## Ticket Analyser Pipeline');
+      expect(content).toContain('Jira RCA Publication');
+    });
   });
 });

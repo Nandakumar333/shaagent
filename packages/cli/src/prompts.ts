@@ -178,12 +178,12 @@ export const SKILLS = [
   },
 ];
 
-export async function prompt(
+export function getQuestions(
   platformFlag?: string,
   scopeFlag?: Scope,
   suiteFlag?: Suite,
-): Promise<InitAnswers> {
-  const answers: Record<string, any> = await inquirer.prompt([
+) {
+  return [
     // Step 2: Global or Project scope
     {
       type: "list",
@@ -229,7 +229,7 @@ export async function prompt(
         { name: "Go", value: "go" },
         { name: "Java", value: "java" },
       ],
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "jira-analyser",
     },
     {
       type: "checkbox",
@@ -246,21 +246,21 @@ export async function prompt(
         { name: "Express", value: "express" },
         { name: "Mocha", value: "mocha" },
       ],
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "jira-analyser",
     },
     {
       type: "input",
       name: "infrastructure",
       message: "Infrastructure? (e.g., AWS, Azure, GCP, Kubernetes)",
       default: "AWS + Kubernetes",
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "jira-analyser",
     },
     {
       type: "input",
       name: "cicd",
       message: "CI/CD platform?",
       default: "GitHub Actions",
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "jira-analyser",
     },
     // Jira Analyser-specific questions
     {
@@ -268,21 +268,21 @@ export async function prompt(
       name: "jiraUrl",
       message: "Jira URL? (e.g., https://your-domain.atlassian.net)",
       default: "https://your-domain.atlassian.net",
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "development",
     },
     {
       type: "input",
       name: "jiraProjectKey",
       message: "Jira Project Key? (e.g., PROJ, SUPPORT)",
       default: "PROJ",
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "development",
     },
     {
       type: "input",
       name: "datadogEuUrl",
       message: "Datadog EU Web UI URL?",
       default: "https://app.datadoghq.com/",
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "development",
     },
     {
       type: "password",
@@ -290,7 +290,7 @@ export async function prompt(
       message:
         "Datadog US GovCloud Access Token? (Bearer token for https://api.ddog-gov.com/, leave empty if not used)",
       mask: "*",
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "development",
     },
     {
       type: "input",
@@ -298,7 +298,7 @@ export async function prompt(
       message:
         "GitLab URL? (e.g., https://gitlab.com, leave empty if not used)",
       default: "",
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "development",
     },
     {
       type: "input",
@@ -306,8 +306,8 @@ export async function prompt(
       message: "GitLab Project ID or Path? (e.g., 12345 or group/project)",
       default: "",
       when: (ans: any) => {
-        const isJira = (ans.suite ?? suiteFlag) !== "development";
-        return isJira && Boolean(ans.gitlabUrl);
+        const isJira = (ans?.suite ?? suiteFlag) !== "development";
+        return isJira && Boolean(ans?.gitlabUrl);
       },
     },
     // Model selection
@@ -315,7 +315,7 @@ export async function prompt(
       type: "input",
       name: "model",
       message: "Default model? (provider/model-id)",
-      default: (ans: any) => getDefaultModel(platformFlag ?? ans.platform),
+      default: (ans: any) => getDefaultModel(platformFlag ?? ans?.platform),
     },
     // Agents selection based on chosen suite
     {
@@ -324,28 +324,28 @@ export async function prompt(
       message: "Select core development agents to install:",
       choices: DEV_CORE_AGENTS,
       when: (ans: any) =>
-        (ans.suite ?? suiteFlag ?? "development") === "development",
+        (ans?.suite ?? suiteFlag ?? "development") === "development",
     },
     {
       type: "checkbox",
       name: "jiraCoreAgents",
       message: "Select Jira Analyser agents to install:",
       choices: JIRA_CORE_AGENTS,
-      when: (ans: any) => (ans.suite ?? suiteFlag) === "jira-analyser",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) === "jira-analyser",
     },
     {
       type: "checkbox",
       name: "bothCoreAgents",
       message: "Select core agents to install:",
       choices: BOTH_CORE_AGENTS,
-      when: (ans: any) => (ans.suite ?? suiteFlag) === "both",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) === "both",
     },
     {
       type: "checkbox",
       name: "optionalAgents",
       message: "Select optional agents:",
       choices: OPTIONAL_AGENTS,
-      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
+      when: (ans: any) => (ans?.suite ?? suiteFlag) !== "jira-analyser",
     },
     {
       type: "checkbox",
@@ -353,7 +353,16 @@ export async function prompt(
       message: "Select skills to install:",
       choices: SKILLS,
     },
-  ] as any);
+  ];
+}
+
+export async function prompt(
+  platformFlag?: string,
+  scopeFlag?: Scope,
+  suiteFlag?: Suite,
+): Promise<InitAnswers> {
+  const questions = getQuestions(platformFlag, scopeFlag, suiteFlag);
+  const answers: Record<string, any> = await inquirer.prompt(questions as any);
 
   const selectedPlatform = (platformFlag ?? answers.platform) as Platform;
   const selectedScope = (scopeFlag ?? answers.scope) as Scope;

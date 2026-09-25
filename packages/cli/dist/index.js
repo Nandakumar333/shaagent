@@ -25361,8 +25361,8 @@ var SKILLS = [
     checked: false
   }
 ];
-async function prompt2(platformFlag, scopeFlag, suiteFlag) {
-  const answers = await dist_default14.prompt([
+function getQuestions(platformFlag, scopeFlag, suiteFlag) {
+  return [
     // Step 2: Global or Project scope
     {
       type: "list",
@@ -25407,7 +25407,7 @@ async function prompt2(platformFlag, scopeFlag, suiteFlag) {
         { name: "Go", value: "go" },
         { name: "Java", value: "java" }
       ],
-      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "jira-analyser"
     },
     {
       type: "checkbox",
@@ -25424,21 +25424,21 @@ async function prompt2(platformFlag, scopeFlag, suiteFlag) {
         { name: "Express", value: "express" },
         { name: "Mocha", value: "mocha" }
       ],
-      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "jira-analyser"
     },
     {
       type: "input",
       name: "infrastructure",
       message: "Infrastructure? (e.g., AWS, Azure, GCP, Kubernetes)",
       default: "AWS + Kubernetes",
-      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "jira-analyser"
     },
     {
       type: "input",
       name: "cicd",
       message: "CI/CD platform?",
       default: "GitHub Actions",
-      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "jira-analyser"
     },
     // Jira Analyser-specific questions
     {
@@ -25446,35 +25446,35 @@ async function prompt2(platformFlag, scopeFlag, suiteFlag) {
       name: "jiraUrl",
       message: "Jira URL? (e.g., https://your-domain.atlassian.net)",
       default: "https://your-domain.atlassian.net",
-      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "development"
     },
     {
       type: "input",
       name: "jiraProjectKey",
       message: "Jira Project Key? (e.g., PROJ, SUPPORT)",
       default: "PROJ",
-      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "development"
     },
     {
       type: "input",
       name: "datadogEuUrl",
       message: "Datadog EU Web UI URL?",
       default: "https://app.datadoghq.com/",
-      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "development"
     },
     {
       type: "password",
       name: "datadogUsAccessToken",
       message: "Datadog US GovCloud Access Token? (Bearer token for https://api.ddog-gov.com/, leave empty if not used)",
       mask: "*",
-      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "development"
     },
     {
       type: "input",
       name: "gitlabUrl",
       message: "GitLab URL? (e.g., https://gitlab.com, leave empty if not used)",
       default: "",
-      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "development"
     },
     {
       type: "input",
@@ -25482,8 +25482,8 @@ async function prompt2(platformFlag, scopeFlag, suiteFlag) {
       message: "GitLab Project ID or Path? (e.g., 12345 or group/project)",
       default: "",
       when: (ans) => {
-        const isJira = (ans.suite ?? suiteFlag) !== "development";
-        return isJira && Boolean(ans.gitlabUrl);
+        const isJira = (ans?.suite ?? suiteFlag) !== "development";
+        return isJira && Boolean(ans?.gitlabUrl);
       }
     },
     // Model selection
@@ -25491,7 +25491,7 @@ async function prompt2(platformFlag, scopeFlag, suiteFlag) {
       type: "input",
       name: "model",
       message: "Default model? (provider/model-id)",
-      default: (ans) => getDefaultModel(platformFlag ?? ans.platform)
+      default: (ans) => getDefaultModel(platformFlag ?? ans?.platform)
     },
     // Agents selection based on chosen suite
     {
@@ -25499,28 +25499,28 @@ async function prompt2(platformFlag, scopeFlag, suiteFlag) {
       name: "devCoreAgents",
       message: "Select core development agents to install:",
       choices: DEV_CORE_AGENTS,
-      when: (ans) => (ans.suite ?? suiteFlag ?? "development") === "development"
+      when: (ans) => (ans?.suite ?? suiteFlag ?? "development") === "development"
     },
     {
       type: "checkbox",
       name: "jiraCoreAgents",
       message: "Select Jira Analyser agents to install:",
       choices: JIRA_CORE_AGENTS,
-      when: (ans) => (ans.suite ?? suiteFlag) === "jira-analyser"
+      when: (ans) => (ans?.suite ?? suiteFlag) === "jira-analyser"
     },
     {
       type: "checkbox",
       name: "bothCoreAgents",
       message: "Select core agents to install:",
       choices: BOTH_CORE_AGENTS,
-      when: (ans) => (ans.suite ?? suiteFlag) === "both"
+      when: (ans) => (ans?.suite ?? suiteFlag) === "both"
     },
     {
       type: "checkbox",
       name: "optionalAgents",
       message: "Select optional agents:",
       choices: OPTIONAL_AGENTS,
-      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
+      when: (ans) => (ans?.suite ?? suiteFlag) !== "jira-analyser"
     },
     {
       type: "checkbox",
@@ -25528,7 +25528,11 @@ async function prompt2(platformFlag, scopeFlag, suiteFlag) {
       message: "Select skills to install:",
       choices: SKILLS
     }
-  ]);
+  ];
+}
+async function prompt2(platformFlag, scopeFlag, suiteFlag) {
+  const questions = getQuestions(platformFlag, scopeFlag, suiteFlag);
+  const answers = await dist_default14.prompt(questions);
   const selectedPlatform = platformFlag ?? answers.platform;
   const selectedScope = scopeFlag ?? answers.scope;
   const selectedSuite = suiteFlag ?? answers.suite ?? "development";
@@ -25550,10 +25554,14 @@ async function prompt2(platformFlag, scopeFlag, suiteFlag) {
     coreAgents = [
       "orchestrator",
       "ticket-analyser",
-      ...rawBoth.filter((a) => a !== "orchestrator" && a !== "ticket-analyser")
+      ...rawBoth.filter(
+        (a) => a !== "orchestrator" && a !== "ticket-analyser"
+      )
     ];
   }
-  const hasDatadog = Boolean(answers.datadogEuUrl || answers.datadogUsAccessToken);
+  const hasDatadog = Boolean(
+    answers.datadogEuUrl || answers.datadogUsAccessToken
+  );
   const datadog = hasDatadog ? {
     eu: {
       url: answers.datadogEuUrl || "https://app.datadoghq.com/",
@@ -26130,7 +26138,9 @@ function generateRootInstruction(agents, platform, context) {
     if (agents.includes("ticket-analyser")) {
       lines.push("## Ticket Analyser Pipeline");
       lines.push("");
-      lines.push("Execute agents in this sequence for ticket analysis and incident RCA:");
+      lines.push(
+        "Execute agents in this sequence for ticket analysis and incident RCA:"
+      );
       lines.push(
         "Gate 0 Check \u2192 Ticket Intake \u2192 HAR Analysis \u2192 Telemetry Investigation \u2192 Codebase Investigation \u2192 Confidence Scoring \u2192 Jira RCA Publication"
       );
@@ -26922,11 +26932,7 @@ var source_default = chalk;
 var import_fs_extra2 = __toESM(require_lib6());
 var import_path4 = __toESM(require("path"));
 var CONFIG_FILE = "shaagent.config.json";
-var VALID_SUITES = [
-  "development",
-  "jira-analyser",
-  "both"
-];
+var VALID_SUITES = ["development", "jira-analyser", "both"];
 var VALID_PLATFORMS = [
   "opencode",
   "claude-code",
@@ -30417,7 +30423,22 @@ function ora(options) {
 // src/init.ts
 function initCommand() {
   const cmd = new Command("init");
-  cmd.description("Initialize multi-agent setup in the current repository").option("-y, --yes", "Skip prompts and use defaults").option("--platform <name>", "AI platform (opencode|claude-code|github-copilot|github-copilot-cli|codex|cursor|continue|windsurf|gemini-cli)").option("--global", "Install agents/skills once for this user (home directory), skipping the scope prompt").option("--project", "Install agents/skills into the current repository only, skipping the scope prompt").option("--suite <type>", "Agent suite to install (development|jira-analyser|both)").option("--dry-run", "Preview what files would be written without making changes").action(async (opts) => {
+  cmd.description("Initialize multi-agent setup in the current repository").option("-y, --yes", "Skip prompts and use defaults").option(
+    "--platform <name>",
+    "AI platform (opencode|claude-code|github-copilot|github-copilot-cli|codex|cursor|continue|windsurf|gemini-cli)"
+  ).option(
+    "--global",
+    "Install agents/skills once for this user (home directory), skipping the scope prompt"
+  ).option(
+    "--project",
+    "Install agents/skills into the current repository only, skipping the scope prompt"
+  ).option(
+    "--suite <type>",
+    "Agent suite to install (development|jira-analyser|both)"
+  ).option(
+    "--dry-run",
+    "Preview what files would be written without making changes"
+  ).action(async (opts) => {
     console.log(source_default.cyan("\n  \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
     console.log(source_default.cyan("  \u2551        shaagent init                 \u2551"));
     console.log(source_default.cyan("  \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D\n"));
@@ -30432,30 +30453,56 @@ function initCommand() {
       console.log(source_default.yellow(`  \u26A0 ${note}
 `));
     }
-    const spinner = ora(`Generating agent files (${answers.scope})...`).start();
+    const spinner = ora(
+      `Generating agent files (${answers.scope})...`
+    ).start();
     try {
-      const written = await renderAgents(answers, { dryRun: opts.dryRun ?? false });
-      spinner.succeed(opts.dryRun ? "Agent files previewed (dry run)" : "Agent files written");
+      const written = await renderAgents(answers, {
+        dryRun: opts.dryRun ?? false
+      });
+      spinner.succeed(
+        opts.dryRun ? "Agent files previewed (dry run)" : "Agent files written"
+      );
       if (answers.skills.length > 0 && !opts.dryRun) {
         const skillSpinner = ora("Installing skills...").start();
         for (const skill of answers.skills) {
           await installSkill(skill, answers.platform, answers.scope);
         }
-        skillSpinner.succeed(`Skills installed: ${answers.skills.join(", ")}`);
+        skillSpinner.succeed(
+          `Skills installed: ${answers.skills.join(", ")}`
+        );
       } else if (answers.skills.length > 0 && opts.dryRun) {
-        console.log(source_default.gray(`  Skills to install: ${answers.skills.join(", ")}`));
+        console.log(
+          source_default.gray(`  Skills to install: ${answers.skills.join(", ")}`)
+        );
       }
       if (!opts.dryRun) {
         await saveConfig(answers);
       }
-      console.log("\n" + source_default.green(opts.dryRun ? "  \u2705 Dry run complete!" : "  \u2705 Multi-agent setup complete!"));
-      console.log(source_default.gray(opts.dryRun ? "     Files that would be written:" : "     Agents written:"));
+      console.log(
+        "\n" + source_default.green(
+          opts.dryRun ? "  \u2705 Dry run complete!" : "  \u2705 Multi-agent setup complete!"
+        )
+      );
+      console.log(
+        source_default.gray(
+          opts.dryRun ? "     Files that would be written:" : "     Agents written:"
+        )
+      );
       written.forEach((f) => console.log(source_default.gray(`       \xB7 ${f}`)));
       if (!opts.dryRun) {
         if (answers.coreAgents.includes("ticket-analyser") && !answers.coreAgents.includes("orchestrator")) {
-          console.log(source_default.gray("\n     Start with: open your AI tool and ask the Ticket Analyser for help (e.g., triage a ticket).\n"));
+          console.log(
+            source_default.gray(
+              "\n     Start with: open your AI tool and ask the Ticket Analyser for help (e.g., triage a ticket).\n"
+            )
+          );
         } else {
-          console.log(source_default.gray("\n     Start with: open your AI tool and ask the Orchestrator for help.\n"));
+          console.log(
+            source_default.gray(
+              "\n     Start with: open your AI tool and ask the Orchestrator for help.\n"
+            )
+          );
         }
       }
     } catch (err) {
@@ -30480,7 +30527,12 @@ function getDefaults(platform, scope, suite) {
       infrastructure: "",
       cicd: "",
       model: getDefaultModel(chosenPlatform),
-      coreAgents: ["ticket-analyser", "har-analyzer", "telemetry-investigator", "researcher"],
+      coreAgents: [
+        "ticket-analyser",
+        "har-analyzer",
+        "telemetry-investigator",
+        "researcher"
+      ],
       optionalAgents: [],
       skills: ["graphify", "caveman", "review"],
       jira: {
@@ -30545,7 +30597,16 @@ function getDefaults(platform, scope, suite) {
     infrastructure: "AWS + Kubernetes",
     cicd: "GitHub Actions",
     model: getDefaultModel(chosenPlatform),
-    coreAgents: ["orchestrator", "debugger", "researcher", "planner", "dev", "qa", "reviewer", "reviewer-fix"],
+    coreAgents: [
+      "orchestrator",
+      "debugger",
+      "researcher",
+      "planner",
+      "dev",
+      "qa",
+      "reviewer",
+      "reviewer-fix"
+    ],
     optionalAgents: [],
     skills: ["graphify", "caveman", "review"]
   };

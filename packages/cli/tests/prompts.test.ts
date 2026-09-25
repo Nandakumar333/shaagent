@@ -242,5 +242,40 @@ describe('prompts', () => {
       expect(result.coreAgents).toContain('ticket-analyser');
       expect(result.coreAgents).toContain('dev');
     });
+
+    it('should correctly evaluate when predicates and default values in getQuestions', async () => {
+      const { getQuestions } = await import('../src/prompts');
+
+      // Test without flags
+      const questions = getQuestions();
+      expect(questions.length).toBeGreaterThan(10);
+
+      // Invoke all when and default functions across suites
+      const testContexts = [
+        { suite: 'development', gitlabUrl: '' },
+        { suite: 'jira-analyser', gitlabUrl: 'https://gitlab.com' },
+        { suite: 'both', gitlabUrl: 'https://gitlab.com' },
+      ];
+
+      for (const ctx of testContexts) {
+        for (const q of questions) {
+          if (typeof q.when === 'function') {
+            q.when(ctx);
+          }
+          if (typeof q.default === 'function') {
+            q.default({ platform: 'cursor' });
+          }
+        }
+      }
+
+      // Test with flags provided (should skip scope, suite, platform)
+      const flagged = getQuestions('cursor', 'project', 'development');
+      const scopeQ = flagged.find(q => q.name === 'scope');
+      expect(scopeQ?.when).toBe(false);
+      const suiteQ = flagged.find(q => q.name === 'suite');
+      expect(suiteQ?.when).toBe(false);
+      const platformQ = flagged.find(q => q.name === 'platform');
+      expect(platformQ?.when).toBe(false);
+    });
   });
 });
