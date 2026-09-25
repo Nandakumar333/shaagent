@@ -16,13 +16,13 @@ npx shaagent init
 
 ## What It Does
 
-`shaagent init` asks you three questions and then writes a complete multi-agent system
-into your repository, tailored to your chosen AI coding platform:
+`npx shaagent init` guides you through a streamlined 5-step setup process and writes a complete multi-agent system into your workspace:
 
-1. Install scope? (project — committed with the repo, or global — once for this user)
-2. Which AI platform? (9 supported — see table below)
-3. Which agents? (core set pre-selected, optional agents opt-in)
-4. Which skills to install? (graphify, caveman, review, tdd, security-scan, arch-review)
+1. **Launch:** Run `npx shaagent init`
+2. **Scope:** Choose **global** (user home directory) or **project** (current repository)
+3. **Agent Suite:** Choose **Development Suite** (Orchestrator + Dev subagents) or **Jira Analyser Suite** (TicketAnalyser + RCA subagents) or **Both**
+4. **Targeted Questions:** Answer questions specific to your chosen suite (tech stack & dev agents for Orchestrator; Jira/Datadog/GitLab credentials for TicketAnalyser)
+5. **Setup:** ShaAgent renders platform-native agent files, installs selected skills, and saves configuration into `shaagent.config.json`
 
 ---
 
@@ -262,11 +262,14 @@ Accepts natural variants: `review` → reviewer, `testing` → qa, `sec` → sec
 ## Commands
 
 ```bash
-shaagent init                          # Interactive setup
+shaagent init                          # Interactive setup (prompts for scope, suite, and options)
 shaagent init --yes                    # Non-interactive, all defaults
 shaagent init --platform claude-code   # Skip platform prompt
 shaagent init --project                # Install into this repo (skip scope prompt)
 shaagent init --global                 # Install into home dir for all projects
+shaagent init --suite jira-analyser    # Install TicketAnalyser & RCA subagents
+shaagent init --suite development      # Install Orchestrator & dev subagents
+shaagent init --suite both             # Install both development & ticket analysis agents
 shaagent init --dry-run                # Preview files without writing
 shaagent init --yes --dry-run          # Preview defaults without writing
 shaagent skill install tdd             # Install a skill

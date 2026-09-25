@@ -12,11 +12,24 @@
         "opencode",
         "claude-code",
         "github-copilot",
+        "github-copilot-cli",
         "codex",
         "cursor",
-        "continue"
+        "continue",
+        "windsurf",
+        "gemini-cli"
       ],
       "description": "The AI coding platform to generate agent files for. All platforms use the same generic templates; only the output format (frontmatter, file structure, extensions) differs."
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["global", "project"],
+      "description": "Installation scope: global (user home directory) or project (current repository)"
+    },
+    "suite": {
+      "type": "string",
+      "enum": ["development", "jira-analyser", "both"],
+      "description": "Installed agent suite: development, jira-analyser, or both"
     },
     "model": {
       "type": "string",

@@ -6,9 +6,9 @@
  */
 
 import inquirer from "inquirer";
-import type { InitAnswers, Platform, Scope } from "./types";
+import type { InitAnswers, Platform, Scope, Suite } from "./types";
 
-const PLATFORMS = [
+export const PLATFORMS = [
   { name: "OpenCode            — .opencode/agents/*.md", value: "opencode" },
   {
     name: "Claude Code         — CLAUDE.md + .claude/agents/*.md",
@@ -32,7 +32,7 @@ const PLATFORMS = [
   },
 ];
 
-const SCOPES = [
+export const SCOPES = [
   {
     name: "Project — install into this repository (.claude/, .cursor/, ... — committed with the code)",
     value: "project",
@@ -43,24 +43,82 @@ const SCOPES = [
   },
 ];
 
-const CORE_AGENTS = [
+export const SUITES = [
+  {
+    name: "Development Suite  — Orchestrator and subagents for software development (Dev, QA, Reviewer, Debugger, Planner...)",
+    value: "development",
+  },
+  {
+    name: "Jira Analyser Suite — JiraAnalyser and subagents for ticket & RCA analysis (HAR Analyzer, Telemetry Investigator...)",
+    value: "jira-analyser",
+  },
+  {
+    name: "Both Suites         — Install both Orchestrator & JiraAnalyser suites",
+    value: "both",
+  },
+];
+
+export const DEV_CORE_AGENTS = [
   {
     name: "Orchestrator  (required, always included)",
     value: "orchestrator",
     checked: true,
   },
+  { name: "Debugger", value: "debugger", checked: true },
+  { name: "Researcher", value: "researcher", checked: true },
+  { name: "Planner", value: "planner", checked: true },
+  { name: "Dev", value: "dev", checked: true },
+  { name: "QA", value: "qa", checked: true },
+  { name: "Reviewer", value: "reviewer", checked: true },
+  { name: "Reviewer-Fix", value: "reviewer-fix", checked: true },
+];
+
+export const JIRA_CORE_AGENTS = [
   {
-    name: "Ticket Analyser (Primary agent for Jira, HAR, Datadog EU/US, GitLab RCA)",
+    name: "Ticket Analyser        (required, primary triage & RCA agent)",
     value: "ticket-analyser",
     checked: true,
   },
   {
-    name: "HAR Analyzer (HTTP Archive parser & correlation extractor)",
+    name: "HAR Analyzer           (HTTP Archive parser & correlation extractor)",
     value: "har-analyzer",
     checked: true,
   },
   {
-    name: "Telemetry Investigator (Datadog EU MCP vs US ddog-gov.com)",
+    name: "Telemetry Investigator (Datadog EU MCP vs US ddog-gov.com logs & traces)",
+    value: "telemetry-investigator",
+    checked: true,
+  },
+  {
+    name: "Researcher             (Codebase investigation via GitLab MCP / repo)",
+    value: "researcher",
+    checked: true,
+  },
+  {
+    name: "Debugger               (Reproduction script generation & verification)",
+    value: "debugger",
+    checked: false,
+  },
+];
+
+export const BOTH_CORE_AGENTS = [
+  {
+    name: "Orchestrator           (required, always included for development)",
+    value: "orchestrator",
+    checked: true,
+  },
+  {
+    name: "Ticket Analyser        (required, primary triage & RCA agent)",
+    value: "ticket-analyser",
+    checked: true,
+  },
+  {
+    name: "HAR Analyzer           (HTTP Archive parser & correlation extractor)",
+    value: "har-analyzer",
+    checked: true,
+  },
+  {
+    name: "Telemetry Investigator (Datadog EU MCP vs US ddog-gov.com logs & traces)",
     value: "telemetry-investigator",
     checked: true,
   },
@@ -73,7 +131,7 @@ const CORE_AGENTS = [
   { name: "Reviewer-Fix", value: "reviewer-fix", checked: true },
 ];
 
-const OPTIONAL_AGENTS = [
+export const OPTIONAL_AGENTS = [
   { name: "Security Auditor", value: "security", checked: false },
   {
     name: "Architecture Reviewer",
@@ -87,7 +145,7 @@ const OPTIONAL_AGENTS = [
   },
 ];
 
-const SKILLS = [
+export const SKILLS = [
   {
     name: "graphify      — codebase knowledge graph (service map, dependencies)",
     value: "graphify",
@@ -123,8 +181,10 @@ const SKILLS = [
 export async function prompt(
   platformFlag?: string,
   scopeFlag?: Scope,
+  suiteFlag?: Suite,
 ): Promise<InitAnswers> {
   const answers: Record<string, any> = await inquirer.prompt([
+    // Step 2: Global or Project scope
     {
       type: "list",
       name: "scope",
@@ -133,6 +193,15 @@ export async function prompt(
       choices: SCOPES,
       when: !scopeFlag,
     },
+    // Step 3: Agent suite choice
+    {
+      type: "list",
+      name: "suite",
+      message: "Which agent suite would you like to install?",
+      choices: SUITES,
+      when: !suiteFlag,
+    },
+    // Step 4: Required questions based on chosen agent suite
     {
       type: "list",
       name: "platform",
@@ -146,6 +215,7 @@ export async function prompt(
       message: "Project name?",
       default: detectProjectName(),
     },
+    // Development-specific questions
     {
       type: "checkbox",
       name: "language",
@@ -159,6 +229,7 @@ export async function prompt(
         { name: "Go", value: "go" },
         { name: "Java", value: "java" },
       ],
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
     },
     {
       type: "checkbox",
@@ -175,36 +246,106 @@ export async function prompt(
         { name: "Express", value: "express" },
         { name: "Mocha", value: "mocha" },
       ],
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
     },
     {
       type: "input",
       name: "infrastructure",
       message: "Infrastructure? (e.g., AWS, Azure, GCP, Kubernetes)",
       default: "AWS + Kubernetes",
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
     },
     {
       type: "input",
       name: "cicd",
       message: "CI/CD platform?",
       default: "GitHub Actions",
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
     },
+    // Jira Analyser-specific questions
+    {
+      type: "input",
+      name: "jiraUrl",
+      message: "Jira URL? (e.g., https://your-domain.atlassian.net)",
+      default: "https://your-domain.atlassian.net",
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+    },
+    {
+      type: "input",
+      name: "jiraProjectKey",
+      message: "Jira Project Key? (e.g., PROJ, SUPPORT)",
+      default: "PROJ",
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+    },
+    {
+      type: "input",
+      name: "datadogEuUrl",
+      message: "Datadog EU Web UI URL?",
+      default: "https://app.datadoghq.com/",
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+    },
+    {
+      type: "password",
+      name: "datadogUsAccessToken",
+      message:
+        "Datadog US GovCloud Access Token? (Bearer token for https://api.ddog-gov.com/, leave empty if not used)",
+      mask: "*",
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+    },
+    {
+      type: "input",
+      name: "gitlabUrl",
+      message:
+        "GitLab URL? (e.g., https://gitlab.com, leave empty if not used)",
+      default: "",
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "development",
+    },
+    {
+      type: "input",
+      name: "gitlabProjectId",
+      message: "GitLab Project ID or Path? (e.g., 12345 or group/project)",
+      default: "",
+      when: (ans: any) => {
+        const isJira = (ans.suite ?? suiteFlag) !== "development";
+        return isJira && Boolean(ans.gitlabUrl);
+      },
+    },
+    // Model selection
     {
       type: "input",
       name: "model",
       message: "Default model? (provider/model-id)",
-      default: getDefaultModel(platformFlag),
+      default: (ans: any) => getDefaultModel(platformFlag ?? ans.platform),
+    },
+    // Agents selection based on chosen suite
+    {
+      type: "checkbox",
+      name: "devCoreAgents",
+      message: "Select core development agents to install:",
+      choices: DEV_CORE_AGENTS,
+      when: (ans: any) =>
+        (ans.suite ?? suiteFlag ?? "development") === "development",
     },
     {
       type: "checkbox",
-      name: "coreAgents",
+      name: "jiraCoreAgents",
+      message: "Select Jira Analyser agents to install:",
+      choices: JIRA_CORE_AGENTS,
+      when: (ans: any) => (ans.suite ?? suiteFlag) === "jira-analyser",
+    },
+    {
+      type: "checkbox",
+      name: "bothCoreAgents",
       message: "Select core agents to install:",
-      choices: CORE_AGENTS,
+      choices: BOTH_CORE_AGENTS,
+      when: (ans: any) => (ans.suite ?? suiteFlag) === "both",
     },
     {
       type: "checkbox",
       name: "optionalAgents",
       message: "Select optional agents:",
       choices: OPTIONAL_AGENTS,
+      when: (ans: any) => (ans.suite ?? suiteFlag) !== "jira-analyser",
     },
     {
       type: "checkbox",
@@ -212,22 +353,111 @@ export async function prompt(
       message: "Select skills to install:",
       choices: SKILLS,
     },
-  ]);
+  ] as any);
+
+  const selectedPlatform = (platformFlag ?? answers.platform) as Platform;
+  const selectedScope = (scopeFlag ?? answers.scope) as Scope;
+  const selectedSuite: Suite = (suiteFlag ??
+    answers.suite ??
+    "development") as Suite;
+
+  // Resolve coreAgents based on suite choice
+  let coreAgents: string[] = [];
+  if (selectedSuite === "development") {
+    const rawDev =
+      answers.devCoreAgents ??
+      answers.coreAgents ??
+      DEV_CORE_AGENTS.map((a) => a.value);
+    coreAgents = [
+      "orchestrator",
+      ...rawDev.filter((a: string) => a !== "orchestrator"),
+    ];
+  } else if (selectedSuite === "jira-analyser") {
+    const rawJira =
+      answers.jiraCoreAgents ??
+      answers.coreAgents ??
+      JIRA_CORE_AGENTS.filter((a) => a.checked).map((a) => a.value);
+    coreAgents = [
+      "ticket-analyser",
+      ...rawJira.filter((a: string) => a !== "ticket-analyser"),
+    ];
+  } else {
+    // 'both'
+    const rawBoth =
+      answers.bothCoreAgents ??
+      answers.coreAgents ??
+      BOTH_CORE_AGENTS.map((a) => a.value);
+    coreAgents = [
+      "orchestrator",
+      "ticket-analyser",
+      ...rawBoth.filter(
+        (a: string) => a !== "orchestrator" && a !== "ticket-analyser",
+      ),
+    ];
+  }
+
+  // Construct datadog, jira, gitlab objects if applicable
+  const hasDatadog = Boolean(
+    answers.datadogEuUrl || answers.datadogUsAccessToken,
+  );
+  const datadog = hasDatadog
+    ? {
+        eu: {
+          url: answers.datadogEuUrl || "https://app.datadoghq.com/",
+          site: (answers.datadogEuUrl || "").includes("datadoghq.eu")
+            ? "datadoghq.eu"
+            : "datadoghq.com",
+          useMcp: true,
+        },
+        ...(answers.datadogUsAccessToken
+          ? {
+              us: {
+                url: "https://app.ddog-gov.com/",
+                apiUrl: "https://api.ddog-gov.com/",
+                site: "ddog-gov.com",
+                accessToken: answers.datadogUsAccessToken,
+              },
+            }
+          : {}),
+      }
+    : undefined;
+
+  const hasJira = Boolean(answers.jiraUrl || answers.jiraProjectKey);
+  const jira = hasJira
+    ? {
+        url: answers.jiraUrl || "https://your-domain.atlassian.net",
+        projectKey: answers.jiraProjectKey || "PROJ",
+      }
+    : undefined;
+
+  const hasGitlab = Boolean(answers.gitlabUrl);
+  const gitlab = hasGitlab
+    ? {
+        url: answers.gitlabUrl,
+        projectId: answers.gitlabProjectId || "",
+      }
+    : undefined;
 
   return {
-    ...answers,
-    platform: (platformFlag ?? answers.platform) as Platform,
-    scope: (scopeFlag ?? answers.scope) as Scope,
-    model: answers.model || getDefaultModel(answers.platform),
-    // Orchestrator is always included
-    coreAgents: [
-      "orchestrator",
-      ...answers.coreAgents.filter((a: string) => a !== "orchestrator"),
-    ],
-  } as InitAnswers;
+    platform: selectedPlatform,
+    scope: selectedScope,
+    suite: selectedSuite,
+    projectName: answers.projectName || detectProjectName(),
+    language: answers.language ?? [],
+    framework: answers.framework ?? [],
+    infrastructure: answers.infrastructure ?? "",
+    cicd: answers.cicd ?? "",
+    model: answers.model || getDefaultModel(selectedPlatform),
+    coreAgents,
+    optionalAgents: answers.optionalAgents ?? [],
+    skills: answers.skills ?? [],
+    datadog,
+    jira,
+    gitlab,
+  };
 }
 
-function getDefaultModel(platform?: string): string {
+export function getDefaultModel(platform?: string): string {
   switch (platform) {
     case "opencode":
       return "github-copilot/claude-sonnet-4.6";

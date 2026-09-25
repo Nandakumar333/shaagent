@@ -25232,24 +25232,79 @@ var SCOPES = [
     value: "global"
   }
 ];
-var CORE_AGENTS = [
+var SUITES = [
+  {
+    name: "Development Suite  \u2014 Orchestrator and subagents for software development (Dev, QA, Reviewer, Debugger, Planner...)",
+    value: "development"
+  },
+  {
+    name: "Jira Analyser Suite \u2014 JiraAnalyser and subagents for ticket & RCA analysis (HAR Analyzer, Telemetry Investigator...)",
+    value: "jira-analyser"
+  },
+  {
+    name: "Both Suites         \u2014 Install both Orchestrator & JiraAnalyser suites",
+    value: "both"
+  }
+];
+var DEV_CORE_AGENTS = [
   {
     name: "Orchestrator  (required, always included)",
     value: "orchestrator",
     checked: true
   },
+  { name: "Debugger", value: "debugger", checked: true },
+  { name: "Researcher", value: "researcher", checked: true },
+  { name: "Planner", value: "planner", checked: true },
+  { name: "Dev", value: "dev", checked: true },
+  { name: "QA", value: "qa", checked: true },
+  { name: "Reviewer", value: "reviewer", checked: true },
+  { name: "Reviewer-Fix", value: "reviewer-fix", checked: true }
+];
+var JIRA_CORE_AGENTS = [
   {
-    name: "Ticket Analyser (Primary agent for Jira, HAR, Datadog EU/US, GitLab RCA)",
+    name: "Ticket Analyser        (required, primary triage & RCA agent)",
     value: "ticket-analyser",
     checked: true
   },
   {
-    name: "HAR Analyzer (HTTP Archive parser & correlation extractor)",
+    name: "HAR Analyzer           (HTTP Archive parser & correlation extractor)",
     value: "har-analyzer",
     checked: true
   },
   {
-    name: "Telemetry Investigator (Datadog EU MCP vs US ddog-gov.com)",
+    name: "Telemetry Investigator (Datadog EU MCP vs US ddog-gov.com logs & traces)",
+    value: "telemetry-investigator",
+    checked: true
+  },
+  {
+    name: "Researcher             (Codebase investigation via GitLab MCP / repo)",
+    value: "researcher",
+    checked: true
+  },
+  {
+    name: "Debugger               (Reproduction script generation & verification)",
+    value: "debugger",
+    checked: false
+  }
+];
+var BOTH_CORE_AGENTS = [
+  {
+    name: "Orchestrator           (required, always included for development)",
+    value: "orchestrator",
+    checked: true
+  },
+  {
+    name: "Ticket Analyser        (required, primary triage & RCA agent)",
+    value: "ticket-analyser",
+    checked: true
+  },
+  {
+    name: "HAR Analyzer           (HTTP Archive parser & correlation extractor)",
+    value: "har-analyzer",
+    checked: true
+  },
+  {
+    name: "Telemetry Investigator (Datadog EU MCP vs US ddog-gov.com logs & traces)",
     value: "telemetry-investigator",
     checked: true
   },
@@ -25306,8 +25361,9 @@ var SKILLS = [
     checked: false
   }
 ];
-async function prompt2(platformFlag, scopeFlag) {
+async function prompt2(platformFlag, scopeFlag, suiteFlag) {
   const answers = await dist_default14.prompt([
+    // Step 2: Global or Project scope
     {
       type: "list",
       name: "scope",
@@ -25315,6 +25371,15 @@ async function prompt2(platformFlag, scopeFlag) {
       choices: SCOPES,
       when: !scopeFlag
     },
+    // Step 3: Agent suite choice
+    {
+      type: "list",
+      name: "suite",
+      message: "Which agent suite would you like to install?",
+      choices: SUITES,
+      when: !suiteFlag
+    },
+    // Step 4: Required questions based on chosen agent suite
     {
       type: "list",
       name: "platform",
@@ -25328,6 +25393,7 @@ async function prompt2(platformFlag, scopeFlag) {
       message: "Project name?",
       default: detectProjectName()
     },
+    // Development-specific questions
     {
       type: "checkbox",
       name: "language",
@@ -25340,7 +25406,8 @@ async function prompt2(platformFlag, scopeFlag) {
         { name: "Rust", value: "rust" },
         { name: "Go", value: "go" },
         { name: "Java", value: "java" }
-      ]
+      ],
+      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
     },
     {
       type: "checkbox",
@@ -25356,37 +25423,104 @@ async function prompt2(platformFlag, scopeFlag) {
         { name: "Spring Boot", value: "spring-boot" },
         { name: "Express", value: "express" },
         { name: "Mocha", value: "mocha" }
-      ]
+      ],
+      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
     },
     {
       type: "input",
       name: "infrastructure",
       message: "Infrastructure? (e.g., AWS, Azure, GCP, Kubernetes)",
-      default: "AWS + Kubernetes"
+      default: "AWS + Kubernetes",
+      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
     },
     {
       type: "input",
       name: "cicd",
       message: "CI/CD platform?",
-      default: "GitHub Actions"
+      default: "GitHub Actions",
+      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
     },
+    // Jira Analyser-specific questions
+    {
+      type: "input",
+      name: "jiraUrl",
+      message: "Jira URL? (e.g., https://your-domain.atlassian.net)",
+      default: "https://your-domain.atlassian.net",
+      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+    },
+    {
+      type: "input",
+      name: "jiraProjectKey",
+      message: "Jira Project Key? (e.g., PROJ, SUPPORT)",
+      default: "PROJ",
+      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+    },
+    {
+      type: "input",
+      name: "datadogEuUrl",
+      message: "Datadog EU Web UI URL?",
+      default: "https://app.datadoghq.com/",
+      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+    },
+    {
+      type: "password",
+      name: "datadogUsAccessToken",
+      message: "Datadog US GovCloud Access Token? (Bearer token for https://api.ddog-gov.com/, leave empty if not used)",
+      mask: "*",
+      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+    },
+    {
+      type: "input",
+      name: "gitlabUrl",
+      message: "GitLab URL? (e.g., https://gitlab.com, leave empty if not used)",
+      default: "",
+      when: (ans) => (ans.suite ?? suiteFlag) !== "development"
+    },
+    {
+      type: "input",
+      name: "gitlabProjectId",
+      message: "GitLab Project ID or Path? (e.g., 12345 or group/project)",
+      default: "",
+      when: (ans) => {
+        const isJira = (ans.suite ?? suiteFlag) !== "development";
+        return isJira && Boolean(ans.gitlabUrl);
+      }
+    },
+    // Model selection
     {
       type: "input",
       name: "model",
       message: "Default model? (provider/model-id)",
-      default: getDefaultModel(platformFlag)
+      default: (ans) => getDefaultModel(platformFlag ?? ans.platform)
+    },
+    // Agents selection based on chosen suite
+    {
+      type: "checkbox",
+      name: "devCoreAgents",
+      message: "Select core development agents to install:",
+      choices: DEV_CORE_AGENTS,
+      when: (ans) => (ans.suite ?? suiteFlag ?? "development") === "development"
     },
     {
       type: "checkbox",
-      name: "coreAgents",
+      name: "jiraCoreAgents",
+      message: "Select Jira Analyser agents to install:",
+      choices: JIRA_CORE_AGENTS,
+      when: (ans) => (ans.suite ?? suiteFlag) === "jira-analyser"
+    },
+    {
+      type: "checkbox",
+      name: "bothCoreAgents",
       message: "Select core agents to install:",
-      choices: CORE_AGENTS
+      choices: BOTH_CORE_AGENTS,
+      when: (ans) => (ans.suite ?? suiteFlag) === "both"
     },
     {
       type: "checkbox",
       name: "optionalAgents",
       message: "Select optional agents:",
-      choices: OPTIONAL_AGENTS
+      choices: OPTIONAL_AGENTS,
+      when: (ans) => (ans.suite ?? suiteFlag) !== "jira-analyser"
     },
     {
       type: "checkbox",
@@ -25395,16 +25529,72 @@ async function prompt2(platformFlag, scopeFlag) {
       choices: SKILLS
     }
   ]);
-  return {
-    ...answers,
-    platform: platformFlag ?? answers.platform,
-    scope: scopeFlag ?? answers.scope,
-    model: answers.model || getDefaultModel(answers.platform),
-    // Orchestrator is always included
-    coreAgents: [
+  const selectedPlatform = platformFlag ?? answers.platform;
+  const selectedScope = scopeFlag ?? answers.scope;
+  const selectedSuite = suiteFlag ?? answers.suite ?? "development";
+  let coreAgents = [];
+  if (selectedSuite === "development") {
+    const rawDev = answers.devCoreAgents ?? answers.coreAgents ?? DEV_CORE_AGENTS.map((a) => a.value);
+    coreAgents = [
       "orchestrator",
-      ...answers.coreAgents.filter((a) => a !== "orchestrator")
-    ]
+      ...rawDev.filter((a) => a !== "orchestrator")
+    ];
+  } else if (selectedSuite === "jira-analyser") {
+    const rawJira = answers.jiraCoreAgents ?? answers.coreAgents ?? JIRA_CORE_AGENTS.filter((a) => a.checked).map((a) => a.value);
+    coreAgents = [
+      "ticket-analyser",
+      ...rawJira.filter((a) => a !== "ticket-analyser")
+    ];
+  } else {
+    const rawBoth = answers.bothCoreAgents ?? answers.coreAgents ?? BOTH_CORE_AGENTS.map((a) => a.value);
+    coreAgents = [
+      "orchestrator",
+      "ticket-analyser",
+      ...rawBoth.filter((a) => a !== "orchestrator" && a !== "ticket-analyser")
+    ];
+  }
+  const hasDatadog = Boolean(answers.datadogEuUrl || answers.datadogUsAccessToken);
+  const datadog = hasDatadog ? {
+    eu: {
+      url: answers.datadogEuUrl || "https://app.datadoghq.com/",
+      site: (answers.datadogEuUrl || "").includes("datadoghq.eu") ? "datadoghq.eu" : "datadoghq.com",
+      useMcp: true
+    },
+    ...answers.datadogUsAccessToken ? {
+      us: {
+        url: "https://app.ddog-gov.com/",
+        apiUrl: "https://api.ddog-gov.com/",
+        site: "ddog-gov.com",
+        accessToken: answers.datadogUsAccessToken
+      }
+    } : {}
+  } : void 0;
+  const hasJira = Boolean(answers.jiraUrl || answers.jiraProjectKey);
+  const jira = hasJira ? {
+    url: answers.jiraUrl || "https://your-domain.atlassian.net",
+    projectKey: answers.jiraProjectKey || "PROJ"
+  } : void 0;
+  const hasGitlab = Boolean(answers.gitlabUrl);
+  const gitlab = hasGitlab ? {
+    url: answers.gitlabUrl,
+    projectId: answers.gitlabProjectId || ""
+  } : void 0;
+  return {
+    platform: selectedPlatform,
+    scope: selectedScope,
+    suite: selectedSuite,
+    projectName: answers.projectName || detectProjectName(),
+    language: answers.language ?? [],
+    framework: answers.framework ?? [],
+    infrastructure: answers.infrastructure ?? "",
+    cicd: answers.cicd ?? "",
+    model: answers.model || getDefaultModel(selectedPlatform),
+    coreAgents,
+    optionalAgents: answers.optionalAgents ?? [],
+    skills: answers.skills ?? [],
+    datadog,
+    jira,
+    gitlab
   };
 }
 function getDefaultModel(platform) {
@@ -25909,9 +26099,15 @@ function generateRootInstruction(agents, platform, context) {
       lines.push(`- @.claude/agents/${agent}.md`);
     }
     lines.push("");
-    lines.push(
-      "Start by reading the **orchestrator** agent instructions when working on any ticket or feature."
-    );
+    if (agents.includes("orchestrator")) {
+      lines.push(
+        "Start by reading the **orchestrator** agent instructions when working on any ticket or feature."
+      );
+    } else if (agents.includes("ticket-analyser")) {
+      lines.push(
+        "Start by reading the **ticket-analyser** agent instructions when working on customer tickets or incidents."
+      );
+    }
   } else if (platform === "github-copilot") {
     lines.push(`# AGENTS.md \u2014 ${context.projectName}`);
     lines.push("");
@@ -25922,13 +26118,24 @@ function generateRootInstruction(agents, platform, context) {
     if (context.infrastructure)
       lines.push(`**Infrastructure:** ${context.infrastructure}`);
     lines.push("");
-    lines.push("## Pipeline Order");
-    lines.push("");
-    lines.push("Execute agents in this sequence for feature work:");
-    lines.push(
-      "1. Researcher \u2192 2. Planner \u2192 3. Developer \u2192 4. QA \u2192 5. Reviewer \u2192 6. Review-Fix"
-    );
-    lines.push("");
+    if (agents.includes("orchestrator")) {
+      lines.push("## Pipeline Order");
+      lines.push("");
+      lines.push("Execute agents in this sequence for feature work:");
+      lines.push(
+        "1. Researcher \u2192 2. Planner \u2192 3. Developer \u2192 4. QA \u2192 5. Reviewer \u2192 6. Review-Fix"
+      );
+      lines.push("");
+    }
+    if (agents.includes("ticket-analyser")) {
+      lines.push("## Ticket Analyser Pipeline");
+      lines.push("");
+      lines.push("Execute agents in this sequence for ticket analysis and incident RCA:");
+      lines.push(
+        "Gate 0 Check \u2192 Ticket Intake \u2192 HAR Analysis \u2192 Telemetry Investigation \u2192 Codebase Investigation \u2192 Confidence Scoring \u2192 Jira RCA Publication"
+      );
+      lines.push("");
+    }
     lines.push("## Agent Details");
     lines.push("");
     lines.push("See `.github/agents/` for detailed per-agent instructions.");
@@ -25950,9 +26157,15 @@ function generateRootInstruction(agents, platform, context) {
       lines.push(`@.gemini/agents/${agent}.md`);
     }
     lines.push("");
-    lines.push(
-      "Start by reading the **orchestrator** agent instructions when working on any ticket or feature."
-    );
+    if (agents.includes("orchestrator")) {
+      lines.push(
+        "Start by reading the **orchestrator** agent instructions when working on any ticket or feature."
+      );
+    } else if (agents.includes("ticket-analyser")) {
+      lines.push(
+        "Start by reading the **ticket-analyser** agent instructions when working on customer tickets or incidents."
+      );
+    }
   }
   return lines.join("\n") + "\n";
 }
@@ -25968,6 +26181,7 @@ function buildContext(answers) {
     projectName: answers.projectName,
     projectDescription: "",
     platform: answers.platform,
+    suite: answers.suite,
     language: answers.language,
     languageList: answers.language.join(", "),
     framework: answers.framework,
@@ -25982,6 +26196,9 @@ function buildContext(answers) {
     skills: answers.skills,
     hasSkills: answers.skills.length > 0,
     hasOptional: answers.optionalAgents.length > 0,
+    datadog: answers.datadog,
+    jira: answers.jira,
+    gitlab: answers.gitlab,
     year: (/* @__PURE__ */ new Date()).getFullYear(),
     // Platform-specific paths used inside templates
     planDir,
@@ -26705,6 +26922,11 @@ var source_default = chalk;
 var import_fs_extra2 = __toESM(require_lib6());
 var import_path4 = __toESM(require("path"));
 var CONFIG_FILE = "shaagent.config.json";
+var VALID_SUITES = [
+  "development",
+  "jira-analyser",
+  "both"
+];
 var VALID_PLATFORMS = [
   "opencode",
   "claude-code",
@@ -26754,6 +26976,14 @@ function validateConfig(config) {
       field: "platform",
       message: `Invalid platform "${config.platform}". Valid: ${VALID_PLATFORMS.join(", ")}`
     });
+  }
+  if (config.suite !== void 0) {
+    if (typeof config.suite !== "string" || !VALID_SUITES.includes(config.suite)) {
+      errors.push({
+        field: "suite",
+        message: `Invalid suite "${config.suite}". Valid: ${VALID_SUITES.join(", ")}`
+      });
+    }
   }
   if (config.model !== void 0 && typeof config.model !== "string") {
     errors.push({ field: "model", message: "model must be a string" });
@@ -26880,6 +27110,18 @@ async function saveConfig(answers) {
       installed: answers.skills
     }
   };
+  if (answers.suite) {
+    config.suite = answers.suite;
+  }
+  if (answers.datadog) {
+    config.datadog = answers.datadog;
+  }
+  if (answers.jira) {
+    config.jira = answers.jira;
+  }
+  if (answers.gitlab) {
+    config.gitlab = answers.gitlab;
+  }
   const errors = validateConfig(config);
   if (errors.length > 0) {
     const msgs = errors.map((e) => `  - ${e.field}: ${e.message}`).join("\n");
@@ -30175,7 +30417,7 @@ function ora(options) {
 // src/init.ts
 function initCommand() {
   const cmd = new Command("init");
-  cmd.description("Initialize multi-agent setup in the current repository").option("-y, --yes", "Skip prompts and use defaults").option("--platform <name>", "AI platform (opencode|claude-code|github-copilot|github-copilot-cli|codex|cursor|continue|windsurf|gemini-cli)").option("--global", "Install agents/skills once for this user (home directory), skipping the scope prompt").option("--project", "Install agents/skills into the current repository only, skipping the scope prompt").option("--dry-run", "Preview what files would be written without making changes").action(async (opts) => {
+  cmd.description("Initialize multi-agent setup in the current repository").option("-y, --yes", "Skip prompts and use defaults").option("--platform <name>", "AI platform (opencode|claude-code|github-copilot|github-copilot-cli|codex|cursor|continue|windsurf|gemini-cli)").option("--global", "Install agents/skills once for this user (home directory), skipping the scope prompt").option("--project", "Install agents/skills into the current repository only, skipping the scope prompt").option("--suite <type>", "Agent suite to install (development|jira-analyser|both)").option("--dry-run", "Preview what files would be written without making changes").action(async (opts) => {
     console.log(source_default.cyan("\n  \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
     console.log(source_default.cyan("  \u2551        shaagent init                 \u2551"));
     console.log(source_default.cyan("  \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D\n"));
@@ -30183,7 +30425,8 @@ function initCommand() {
       console.log(source_default.yellow("  \u26A1 DRY RUN \u2014 no files will be written\n"));
     }
     const scopeFlag = opts.global ? "global" : opts.project ? "project" : void 0;
-    const answers = opts.yes ? getDefaults(opts.platform, scopeFlag) : await prompt2(opts.platform, scopeFlag);
+    const suiteFlag = opts.suite;
+    const answers = opts.yes ? getDefaults(opts.platform, scopeFlag, suiteFlag) : await prompt2(opts.platform, scopeFlag, suiteFlag);
     const { note } = getPlatformPaths(answers.platform, answers.scope);
     if (note) {
       console.log(source_default.yellow(`  \u26A0 ${note}
@@ -30209,7 +30452,11 @@ function initCommand() {
       console.log(source_default.gray(opts.dryRun ? "     Files that would be written:" : "     Agents written:"));
       written.forEach((f) => console.log(source_default.gray(`       \xB7 ${f}`)));
       if (!opts.dryRun) {
-        console.log(source_default.gray("\n     Start with: open your AI tool and ask the Orchestrator for help.\n"));
+        if (answers.coreAgents.includes("ticket-analyser") && !answers.coreAgents.includes("orchestrator")) {
+          console.log(source_default.gray("\n     Start with: open your AI tool and ask the Ticket Analyser for help (e.g., triage a ticket).\n"));
+        } else {
+          console.log(source_default.gray("\n     Start with: open your AI tool and ask the Orchestrator for help.\n"));
+        }
       }
     } catch (err) {
       spinner.fail("Setup failed");
@@ -30219,16 +30466,85 @@ function initCommand() {
   });
   return cmd;
 }
-function getDefaults(platform, scope) {
+function getDefaults(platform, scope, suite) {
+  const chosenSuite = suite ?? "development";
+  const chosenPlatform = platform ?? "opencode";
+  if (chosenSuite === "jira-analyser") {
+    return {
+      platform: chosenPlatform,
+      scope: scope ?? "project",
+      suite: "jira-analyser",
+      projectName: "my-project",
+      language: [],
+      framework: [],
+      infrastructure: "",
+      cicd: "",
+      model: getDefaultModel(chosenPlatform),
+      coreAgents: ["ticket-analyser", "har-analyzer", "telemetry-investigator", "researcher"],
+      optionalAgents: [],
+      skills: ["graphify", "caveman", "review"],
+      jira: {
+        url: "https://your-domain.atlassian.net",
+        projectKey: "PROJ"
+      },
+      datadog: {
+        eu: {
+          url: "https://app.datadoghq.com/",
+          site: "datadoghq.com",
+          useMcp: true
+        }
+      }
+    };
+  }
+  if (chosenSuite === "both") {
+    return {
+      platform: chosenPlatform,
+      scope: scope ?? "project",
+      suite: "both",
+      projectName: "my-project",
+      language: ["csharp", "typescript", "python"],
+      framework: ["dotnet8", "react"],
+      infrastructure: "AWS + Kubernetes",
+      cicd: "GitHub Actions",
+      model: getDefaultModel(chosenPlatform),
+      coreAgents: [
+        "orchestrator",
+        "ticket-analyser",
+        "har-analyzer",
+        "telemetry-investigator",
+        "debugger",
+        "researcher",
+        "planner",
+        "dev",
+        "qa",
+        "reviewer",
+        "reviewer-fix"
+      ],
+      optionalAgents: [],
+      skills: ["graphify", "caveman", "review"],
+      jira: {
+        url: "https://your-domain.atlassian.net",
+        projectKey: "PROJ"
+      },
+      datadog: {
+        eu: {
+          url: "https://app.datadoghq.com/",
+          site: "datadoghq.com",
+          useMcp: true
+        }
+      }
+    };
+  }
   return {
-    platform: platform ?? "opencode",
+    platform: chosenPlatform,
     scope: scope ?? "project",
+    suite: "development",
     projectName: "my-project",
     language: ["csharp", "typescript", "python"],
     framework: ["dotnet8", "react"],
     infrastructure: "AWS + Kubernetes",
     cicd: "GitHub Actions",
-    model: "github-copilot/claude-sonnet-4.6",
+    model: getDefaultModel(chosenPlatform),
     coreAgents: ["orchestrator", "debugger", "researcher", "planner", "dev", "qa", "reviewer", "reviewer-fix"],
     optionalAgents: [],
     skills: ["graphify", "caveman", "review"]

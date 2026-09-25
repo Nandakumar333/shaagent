@@ -5,9 +5,11 @@
 
 import fs from "fs-extra";
 import path from "path";
-import type { InitAnswers, Platform } from "../types";
+import type { InitAnswers, Platform, Suite } from "../types";
 
 const CONFIG_FILE = "shaagent.config.json";
+
+const VALID_SUITES: Suite[] = ["development", "jira-analyser", "both"];
 
 const VALID_PLATFORMS: Platform[] = [
   "opencode",
@@ -75,6 +77,19 @@ function validateConfig(
       field: "platform",
       message: `Invalid platform "${config.platform}". Valid: ${VALID_PLATFORMS.join(", ")}`,
     });
+  }
+
+  // Optional: suite
+  if (config.suite !== undefined) {
+    if (
+      typeof config.suite !== "string" ||
+      !VALID_SUITES.includes(config.suite as Suite)
+    ) {
+      errors.push({
+        field: "suite",
+        message: `Invalid suite "${config.suite}". Valid: ${VALID_SUITES.join(", ")}`,
+      });
+    }
   }
 
   // Optional: model
@@ -197,7 +212,7 @@ function validateConfig(
 }
 
 export async function saveConfig(answers: InitAnswers): Promise<void> {
-  const config = {
+  const config: Record<string, unknown> = {
     $schema: "https://shaagent.dev/schema/v1.json",
     platform: answers.platform,
     scope: answers.scope,
@@ -217,6 +232,19 @@ export async function saveConfig(answers: InitAnswers): Promise<void> {
       installed: answers.skills,
     },
   };
+
+  if (answers.suite) {
+    config.suite = answers.suite;
+  }
+  if (answers.datadog) {
+    config.datadog = answers.datadog;
+  }
+  if (answers.jira) {
+    config.jira = answers.jira;
+  }
+  if (answers.gitlab) {
+    config.gitlab = answers.gitlab;
+  }
 
   const errors = validateConfig(config);
   if (errors.length > 0) {

@@ -20,6 +20,7 @@ vi.mock('../src/prompts', () => ({
     optionalAgents: [],
     skills: [],
   }),
+  getDefaultModel: vi.fn().mockReturnValue('github-copilot/claude-sonnet-4.6'),
 }));
 
 vi.mock('../src/engine/template', () => ({
@@ -76,6 +77,12 @@ describe('init', () => {
       const cmd = initCommand();
       const opts = cmd.options.map(o => o.long);
       expect(opts).toContain('--project');
+    });
+
+    it('should have --suite option', () => {
+      const cmd = initCommand();
+      const opts = cmd.options.map(o => o.long);
+      expect(opts).toContain('--suite');
     });
 
     it('should have --dry-run option', () => {
@@ -143,6 +150,36 @@ describe('init', () => {
 
       expect(renderAgents).toHaveBeenCalledWith(
         expect.objectContaining({ scope: 'project' }),
+        { dryRun: true }
+      );
+    });
+
+    it('should use --suite jira-analyser flag in defaults', async () => {
+      const { renderAgents } = await import('../src/engine/template');
+
+      const cmd = initCommand();
+      await cmd.parseAsync(['node', 'test', '--yes', '--suite', 'jira-analyser', '--dry-run']);
+
+      expect(renderAgents).toHaveBeenCalledWith(
+        expect.objectContaining({
+          suite: 'jira-analyser',
+          coreAgents: expect.arrayContaining(['ticket-analyser', 'har-analyzer', 'telemetry-investigator']),
+        }),
+        { dryRun: true }
+      );
+    });
+
+    it('should use --suite both flag in defaults', async () => {
+      const { renderAgents } = await import('../src/engine/template');
+
+      const cmd = initCommand();
+      await cmd.parseAsync(['node', 'test', '--yes', '--suite', 'both', '--dry-run']);
+
+      expect(renderAgents).toHaveBeenCalledWith(
+        expect.objectContaining({
+          suite: 'both',
+          coreAgents: expect.arrayContaining(['orchestrator', 'ticket-analyser']),
+        }),
         { dryRun: true }
       );
     });

@@ -457,9 +457,15 @@ function generateRootInstruction(
       lines.push(`- @.claude/agents/${agent}.md`);
     }
     lines.push("");
-    lines.push(
-      "Start by reading the **orchestrator** agent instructions when working on any ticket or feature.",
-    );
+    if (agents.includes("orchestrator")) {
+      lines.push(
+        "Start by reading the **orchestrator** agent instructions when working on any ticket or feature.",
+      );
+    } else if (agents.includes("ticket-analyser")) {
+      lines.push(
+        "Start by reading the **ticket-analyser** agent instructions when working on customer tickets or incidents.",
+      );
+    }
   } else if (platform === "github-copilot") {
     lines.push(`# AGENTS.md — ${context.projectName}`);
     lines.push("");
@@ -470,13 +476,26 @@ function generateRootInstruction(
     if (context.infrastructure)
       lines.push(`**Infrastructure:** ${context.infrastructure}`);
     lines.push("");
-    lines.push("## Pipeline Order");
-    lines.push("");
-    lines.push("Execute agents in this sequence for feature work:");
-    lines.push(
-      "1. Researcher → 2. Planner → 3. Developer → 4. QA → 5. Reviewer → 6. Review-Fix",
-    );
-    lines.push("");
+    if (agents.includes("orchestrator")) {
+      lines.push("## Pipeline Order");
+      lines.push("");
+      lines.push("Execute agents in this sequence for feature work:");
+      lines.push(
+        "1. Researcher → 2. Planner → 3. Developer → 4. QA → 5. Reviewer → 6. Review-Fix",
+      );
+      lines.push("");
+    }
+    if (agents.includes("ticket-analyser")) {
+      lines.push("## Ticket Analyser Pipeline");
+      lines.push("");
+      lines.push(
+        "Execute agents in this sequence for ticket analysis and incident RCA:",
+      );
+      lines.push(
+        "Gate 0 Check → Ticket Intake → HAR Analysis → Telemetry Investigation → Codebase Investigation → Confidence Scoring → Jira RCA Publication",
+      );
+      lines.push("");
+    }
     lines.push("## Agent Details");
     lines.push("");
     lines.push("See `.github/agents/` for detailed per-agent instructions.");
@@ -498,9 +517,15 @@ function generateRootInstruction(
       lines.push(`@.gemini/agents/${agent}.md`);
     }
     lines.push("");
-    lines.push(
-      "Start by reading the **orchestrator** agent instructions when working on any ticket or feature.",
-    );
+    if (agents.includes("orchestrator")) {
+      lines.push(
+        "Start by reading the **orchestrator** agent instructions when working on any ticket or feature.",
+      );
+    } else if (agents.includes("ticket-analyser")) {
+      lines.push(
+        "Start by reading the **ticket-analyser** agent instructions when working on customer tickets or incidents.",
+      );
+    }
   }
 
   return lines.join("\n") + "\n";
@@ -525,6 +550,7 @@ function buildContext(answers: InitAnswers): Record<string, unknown> {
     projectName: answers.projectName,
     projectDescription: "",
     platform: answers.platform,
+    suite: answers.suite,
     language: answers.language,
     languageList: answers.language.join(", "),
     framework: answers.framework,
@@ -539,6 +565,9 @@ function buildContext(answers: InitAnswers): Record<string, unknown> {
     skills: answers.skills,
     hasSkills: answers.skills.length > 0,
     hasOptional: answers.optionalAgents.length > 0,
+    datadog: answers.datadog,
+    jira: answers.jira,
+    gitlab: answers.gitlab,
     year: new Date().getFullYear(),
     // Platform-specific paths used inside templates
     planDir,

@@ -214,5 +214,36 @@ describe('engine/manifest', () => {
       expect(loaded).not.toBeNull();
       expect((loaded as any).datadog.us.url).toBe('https://app.ddog-gov.com/');
     });
+
+    it('should save suite, jira, datadog, and gitlab configs when provided', async () => {
+      const answers: InitAnswers = {
+        ...mockAnswers,
+        suite: 'jira-analyser',
+        jira: {
+          url: 'https://example.atlassian.net',
+          projectKey: 'PROJ',
+        },
+        datadog: {
+          eu: { url: 'https://app.datadoghq.com/', site: 'datadoghq.com', useMcp: true },
+          us: { url: 'https://app.ddog-gov.com/', apiUrl: 'https://api.ddog-gov.com/', site: 'ddog-gov.com', accessToken: 'us-token' },
+        },
+        gitlab: {
+          url: 'https://gitlab.com',
+          projectId: 'my-group/project',
+        },
+      };
+
+      await saveConfig(answers);
+      const configPath = path.join(tempDir, 'shaagent.config.json');
+      const saved = await fs.readJson(configPath);
+
+      expect(saved.suite).toBe('jira-analyser');
+      expect(saved.jira).toEqual({
+        url: 'https://example.atlassian.net',
+        projectKey: 'PROJ',
+      });
+      expect(saved.datadog.us.accessToken).toBe('us-token');
+      expect(saved.gitlab.projectId).toBe('my-group/project');
+    });
   });
 });

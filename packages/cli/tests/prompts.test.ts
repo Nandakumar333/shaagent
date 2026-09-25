@@ -180,5 +180,67 @@ describe('prompts', () => {
 
       expect(result.model).toBe(expectedModel);
     });
+
+    it('should configure ticket-analyser as primary agent when jira-analyser suite is selected', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        scope: 'project',
+        suite: 'jira-analyser',
+        platform: 'opencode',
+        projectName: 'jira-test',
+        jiraUrl: 'https://test.atlassian.net',
+        jiraProjectKey: 'OPS',
+        datadogEuUrl: 'https://app.datadoghq.com/',
+        datadogUsAccessToken: 'secret-token-123',
+        gitlabUrl: 'https://gitlab.com',
+        gitlabProjectId: 'my-group/project',
+        model: 'github-copilot/claude-sonnet-4.6',
+        jiraCoreAgents: ['ticket-analyser', 'har-analyzer', 'telemetry-investigator'],
+        skills: ['graphify'],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt('opencode', 'project', 'jira-analyser');
+
+      expect(result.suite).toBe('jira-analyser');
+      expect(result.coreAgents[0]).toBe('ticket-analyser');
+      expect(result.coreAgents).toContain('har-analyzer');
+      expect(result.coreAgents).toContain('telemetry-investigator');
+      expect(result.coreAgents).not.toContain('orchestrator');
+      expect(result.jira).toEqual({
+        url: 'https://test.atlassian.net',
+        projectKey: 'OPS',
+      });
+      expect(result.datadog?.us?.accessToken).toBe('secret-token-123');
+      expect(result.gitlab?.projectId).toBe('my-group/project');
+    });
+
+    it('should configure both orchestrator and ticket-analyser when both suite is selected', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        scope: 'project',
+        suite: 'both',
+        platform: 'opencode',
+        projectName: 'both-test',
+        language: ['typescript'],
+        framework: ['react'],
+        infrastructure: 'AWS',
+        cicd: 'GitHub Actions',
+        jiraUrl: 'https://test.atlassian.net',
+        jiraProjectKey: 'DEV',
+        model: 'github-copilot/claude-sonnet-4.6',
+        bothCoreAgents: ['orchestrator', 'ticket-analyser', 'dev'],
+        optionalAgents: [],
+        skills: [],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt('opencode', 'project', 'both');
+
+      expect(result.suite).toBe('both');
+      expect(result.coreAgents).toContain('orchestrator');
+      expect(result.coreAgents).toContain('ticket-analyser');
+      expect(result.coreAgents).toContain('dev');
+    });
   });
 });
