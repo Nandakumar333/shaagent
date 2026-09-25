@@ -25365,7 +25365,7 @@ function getQuestions(platformFlag, scopeFlag, suiteFlag) {
   return [
     // Step 2: Global or Project scope
     {
-      type: "list",
+      type: "select",
       name: "scope",
       message: "Install agents/skills globally (this user) or just for this project?",
       choices: SCOPES,
@@ -25373,7 +25373,7 @@ function getQuestions(platformFlag, scopeFlag, suiteFlag) {
     },
     // Step 3: Agent suite choice
     {
-      type: "list",
+      type: "select",
       name: "suite",
       message: "Which agent suite would you like to install?",
       choices: SUITES,
@@ -25381,7 +25381,7 @@ function getQuestions(platformFlag, scopeFlag, suiteFlag) {
     },
     // Step 4: Required questions based on chosen agent suite
     {
-      type: "list",
+      type: "select",
       name: "platform",
       message: "Which AI coding platform do you use?",
       choices: PLATFORMS,

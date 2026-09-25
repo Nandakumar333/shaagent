@@ -186,7 +186,7 @@ export function getQuestions(
   return [
     // Step 2: Global or Project scope
     {
-      type: "list",
+      type: "select",
       name: "scope",
       message:
         "Install agents/skills globally (this user) or just for this project?",
@@ -195,7 +195,7 @@ export function getQuestions(
     },
     // Step 3: Agent suite choice
     {
-      type: "list",
+      type: "select",
       name: "suite",
       message: "Which agent suite would you like to install?",
       choices: SUITES,
@@ -203,7 +203,7 @@ export function getQuestions(
     },
     // Step 4: Required questions based on chosen agent suite
     {
-      type: "list",
+      type: "select",
       name: "platform",
       message: "Which AI coding platform do you use?",
       choices: PLATFORMS,
