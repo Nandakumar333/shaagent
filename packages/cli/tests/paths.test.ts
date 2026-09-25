@@ -171,5 +171,32 @@ describe('engine/paths', () => {
       const skillsRoot = getSkillsRoot();
       expect(skillsRoot).toBe(path.join(pkgRoot, 'skills'));
     });
+
+    it('should use bundled sibling or dist templates when SHAAGENT_BUNDLED is true', () => {
+      process.env.SHAAGENT_BUNDLED = 'true';
+      try {
+        const pkgRoot = getPackageRoot();
+        _resetPathCache();
+        vi.spyOn(fs, 'existsSync').mockImplementation((p: fs.PathLike) => {
+          const pStr = String(p);
+          if (pStr.endsWith(path.join('engine', 'templates'))) return true;
+          if (pStr.endsWith(path.join('engine', 'skills'))) return true;
+          return false;
+        });
+        expect(getTemplatesRoot()).toContain('templates');
+        expect(getSkillsRoot()).toContain('skills');
+
+        vi.spyOn(fs, 'existsSync').mockImplementation((p: fs.PathLike) => {
+          const pStr = String(p);
+          if (pStr === path.join(pkgRoot, 'dist', 'templates')) return true;
+          if (pStr === path.join(pkgRoot, 'dist', 'skills')) return true;
+          return false;
+        });
+        expect(getTemplatesRoot()).toBe(path.join(pkgRoot, 'dist', 'templates'));
+        expect(getSkillsRoot()).toBe(path.join(pkgRoot, 'dist', 'skills'));
+      } finally {
+        delete process.env.SHAAGENT_BUNDLED;
+      }
+    });
   });
 });
