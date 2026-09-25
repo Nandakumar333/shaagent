@@ -24,9 +24,11 @@ Project context: {{projectDescription}}
 
 ## Input from TicketAnalyser
 
-You receive:
-- Path to downloaded `.har` file(s)
-- Optional ticket symptom or reported endpoint to narrow the search
+You receive one of the following:
+- **File path**: Path to `.har` file(s) (e.g. `./attachments/<ticket-key>/request.har`, `./attachments/*.har`, or workspace path)
+- **Auto-discovery**: If no path is explicitly provided, look in `./attachments/<ticket-key>/` or `./attachments/`
+- **Raw content**: Full HAR JSON text or relevant `log.entries` JSON array pasted directly into the prompt
+- **Optional context**: Reported failing endpoint, HTTP error status (e.g. 500), or ticket symptom to prioritize search
 
 ---
 
