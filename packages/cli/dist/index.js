@@ -25359,6 +25359,11 @@ var SKILLS = [
     name: "arch-review   \u2014 architecture fitness functions for microservices",
     value: "arch-review",
     checked: false
+  },
+  {
+    name: "solid-dev     \u2014 architecture alignment, naming conventions & SOLID principles",
+    value: "solid-dev",
+    checked: false
   }
 ];
 function getQuestions(platformFlag, scopeFlag, suiteFlag) {
@@ -26968,7 +26973,8 @@ var VALID_SKILLS = [
   "review",
   "tdd",
   "security-scan",
-  "arch-review"
+  "arch-review",
+  "solid-dev"
 ];
 function validateConfig(config) {
   const errors = [];

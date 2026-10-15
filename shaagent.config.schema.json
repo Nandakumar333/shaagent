@@ -159,7 +159,8 @@
               "review",
               "tdd",
               "security-scan",
-              "arch-review"
+              "arch-review",
+              "solid-dev"
             ]
           }
         }

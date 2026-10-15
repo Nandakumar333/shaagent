@@ -111,14 +111,15 @@ When neither flag is passed, `shaagent init` asks. Some platforms (GitHub Copilo
 Skills are Markdown files that extend agent capabilities. They install to your
 platform's global skill directory.
 
-| Skill           | What it does                                   | Install path (OpenCode)                            |
-| --------------- | ---------------------------------------------- | -------------------------------------------------- |
-| `graphify`      | Codebase knowledge graph (service map, deps)   | `~/.config/opencode/skills/graphify/SKILL.md`      |
-| `caveman`       | Token compression + progressive simplification | `~/.config/opencode/skills/caveman/SKILL.md`       |
-| `review`        | Systematic code review (.NET-focused)          | `~/.config/opencode/skills/review/SKILL.md`        |
-| `tdd`           | Red-Green-Refactor (xUnit/pytest/Vitest)       | `~/.config/opencode/skills/tdd/SKILL.md`           |
-| `security-scan` | OWASP-aligned security audit for .NET          | `~/.config/opencode/skills/security-scan/SKILL.md` |
-| `arch-review`   | Architecture fitness functions (microservices) | `~/.config/opencode/skills/arch-review/SKILL.md`   |
+| Skill           | What it does                                       | Install path (OpenCode)                            |
+| --------------- | -------------------------------------------------- | -------------------------------------------------- |
+| `graphify`      | Codebase knowledge graph (service map, deps)       | `~/.config/opencode/skills/graphify/SKILL.md`      |
+| `caveman`       | Token compression + progressive simplification     | `~/.config/opencode/skills/caveman/SKILL.md`       |
+| `review`        | Systematic code review (.NET-focused)              | `~/.config/opencode/skills/review/SKILL.md`        |
+| `tdd`           | Red-Green-Refactor (xUnit/pytest/Vitest)           | `~/.config/opencode/skills/tdd/SKILL.md`           |
+| `security-scan` | OWASP-aligned security audit for .NET              | `~/.config/opencode/skills/security-scan/SKILL.md` |
+| `arch-review`   | Architecture fitness functions (microservices)     | `~/.config/opencode/skills/arch-review/SKILL.md`   |
+| `solid-dev`     | Architecture alignment, naming conventions & SOLID | `~/.config/opencode/skills/solid-dev/SKILL.md`     |
 
 Install a skill later:
 

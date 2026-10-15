@@ -15,6 +15,7 @@ describe('install-skill', () => {
       expect(validateSkillName('tdd')).toBe(true);
       expect(validateSkillName('security-scan')).toBe(true);
       expect(validateSkillName('arch-review')).toBe(true);
+      expect(validateSkillName('solid-dev')).toBe(true);
       expect(validateSkillName('my_skill')).toBe(true);
       expect(validateSkillName('skill123')).toBe(true);
     });
@@ -86,6 +87,12 @@ describe('install-skill', () => {
       await installSkill('graphify', 'opencode', 'project');
       const installed = path.join(tempDir, '.opencode', 'skills', 'graphify');
       expect(await fs.pathExists(installed)).toBe(true);
+
+      await installSkill('solid-dev', 'opencode', 'project');
+      const solidInstalled = path.join(tempDir, '.opencode', 'skills', 'solid-dev');
+      expect(await fs.pathExists(solidInstalled)).toBe(true);
+      expect(await fs.pathExists(path.join(solidInstalled, 'SKILL.md'))).toBe(true);
+      expect(await fs.pathExists(path.join(solidInstalled, 'references', 'architecture-decision-matrix.md'))).toBe(true);
     });
   });
 

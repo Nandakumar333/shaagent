@@ -190,6 +190,14 @@ describe('engine/manifest', () => {
       await expect(saveConfig(bad)).rejects.toThrow('Invalid');
     });
 
+    it('should accept solid-dev as a valid skill', async () => {
+      const answers = {
+        ...mockAnswers,
+        skills: ['solid-dev'],
+      };
+      await expect(saveConfig(answers)).resolves.not.toThrow();
+    });
+
     it('should accept ticket-analyser, har-analyzer, and telemetry-investigator as core agents', async () => {
       const answers = {
         ...mockAnswers,

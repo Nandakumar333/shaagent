@@ -27,14 +27,20 @@ You receive:
 
 Follow the plan step by step. After each step, run the build verification command from the plan.
 
-### Coding Standards
+### Coding Standards & Architecture Alignment
 
-Follow the patterns and conventions identified in the Researcher's report:
-- Match existing naming conventions (files, classes, functions, variables)
-- Use the same DI/IoC patterns present in the codebase
-- Follow the established error handling approach
-- Match the existing code formatting and style
-- Use appropriate documentation comments on public APIs
+Follow the patterns and conventions identified in the Researcher's report and the `solid-dev` skill (`use skill solid-dev`):
+- **Pre-Implementation Reconnaissance**: Inspect existing sibling files before creating new files to strictly match directory topology and casing (`kebab-case`, `PascalCase`, `snake_case`).
+- **Naming Conventions**: Follow existing conventions for folders, files, classes, methods, functions, and variables. Use intention-revealing verb-noun names for functions.
+- **SOLID Principles**:
+  - *Single Responsibility*: Classes $\le 300$ lines, methods $\le 30$ lines. Extract helper functions.
+  - *Open/Closed*: Extend via interfaces/strategies; avoid monster switch/if-else blocks.
+  - *Liskov Substitution*: Implementations must honor base contracts without throwing unexpected exceptions.
+  - *Interface Segregation*: Depend on lean, role-specific interfaces.
+  - *Dependency Inversion*: Inject abstractions via constructors/factories; avoid direct `new` of infrastructure in business logic.
+- **Decision Matrix**: When existing code diverges from industry standards, follow local codebase conventions for consistency unless resolving critical safety issues (consult `solid-dev` Decision Matrix).
+- **Error Handling & Resilience**: Use structured, typed error handling; never swallow exceptions.
+- **Documentation**: Add concise documentation comments on public interfaces and exports.
 {{#if techStack}}
 
 ### Stack-Specific Notes

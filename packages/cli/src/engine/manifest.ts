@@ -50,6 +50,7 @@ const VALID_SKILLS = [
   "tdd",
   "security-scan",
   "arch-review",
+  "solid-dev",
 ];
 
 export interface ConfigValidationError {

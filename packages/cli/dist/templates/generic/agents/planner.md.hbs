@@ -18,7 +18,11 @@ You receive:
 
 1. Read the Researcher's report completely.
 2. Map dependency chains between affected modules/services.
-3. Design the solution: interfaces first, then implementations.
+3. Design the solution following the `solid-dev` skill (`use skill solid-dev`):
+   - Check existing directory topology and naming conventions (folders, files, classes, methods).
+   - Enforce Clean Architecture dependency direction (Domain ──▶ Application ──▶ Infrastructure).
+   - Apply the `solid-dev` Architecture Decision Matrix to balance existing code patterns with industry standards.
+   - Design data contracts and interfaces first before concrete implementations.
 4. Write the plan to `{{planDir}}/{ticketNumber}-plan.md`.
 5. Report completion to Orchestrator — do NOT call any other agent.
 

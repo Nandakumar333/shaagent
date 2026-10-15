@@ -176,6 +176,11 @@ export const SKILLS = [
     value: "arch-review",
     checked: false,
   },
+  {
+    name: "solid-dev     — architecture alignment, naming conventions & SOLID principles",
+    value: "solid-dev",
+    checked: false,
+  },
 ];
 
 export function getQuestions(

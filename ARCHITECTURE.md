@@ -299,14 +299,15 @@ skills/<skill-name>/
 
 ### Built-in skills
 
-| Skill           | Purpose                                                 |
-| --------------- | ------------------------------------------------------- |
-| `graphify`      | Turn any codebase/docs into a queryable knowledge graph |
-| `caveman`       | Simplify complex code to minimal working examples       |
-| `tdd`           | Enforce Red-Green-Refactor TDD cycles                   |
-| `security-scan` | OWASP-aligned security audit for code changes           |
-| `arch-review`   | Architecture fitness function evaluation                |
-| `review`        | Systematic code review for distributed microservices    |
+| Skill           | Purpose                                                       |
+| --------------- | ------------------------------------------------------------- |
+| `graphify`      | Turn any codebase/docs into a queryable knowledge graph       |
+| `caveman`       | Simplify complex code to minimal working examples             |
+| `tdd`           | Enforce Red-Green-Refactor TDD cycles                         |
+| `security-scan` | OWASP-aligned security audit for code changes                 |
+| `arch-review`   | Architecture fitness function evaluation                      |
+| `review`        | Systematic code review for distributed microservices          |
+| `solid-dev`     | Architecture alignment, naming conventions & SOLID principles |
 
 Skills install to the platform-correct path:
 
