@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: Enforce Red-Green-Refactor TDD cycle for .NET (xUnit), Python (pytest), and React (Vitest) development. Ensures tests are written before implementation code.
+description: Enforce Red-Green-Refactor TDD cycle for .NET (xUnit), Python (pytest), React (Vitest), and Node.js (Mocha) development. Ensures tests are written before implementation code.
 trigger: Load with `use skill tdd` or `/tdd`. Auto-suggested when plan has acceptance criteria.
 ---
 
@@ -25,17 +25,20 @@ Enforce strict Test-Driven Development across the platform stack.
 ## Process
 
 ### RED Phase
+
 1. Pick the next acceptance criterion from the plan.
 2. Write ONE test that expresses that behaviour.
 3. Run the test — it MUST fail (compile error or assertion failure).
 4. If it passes without implementation → test has no value, rewrite it.
 
 ### GREEN Phase
+
 1. Write the MINIMUM code to make the failing test pass.
 2. No cleverness. No abstractions. Just make it pass.
 3. Run ALL tests — new one passes, no regressions.
 
 ### REFACTOR Phase
+
 1. Now clean up: extract methods, rename, remove duplication.
 2. Run ALL tests — still passing.
 3. Clean up the test if needed (readability only).
@@ -43,6 +46,7 @@ Enforce strict Test-Driven Development across the platform stack.
 ## .NET / xUnit Patterns
 
 ### Arrange-Act-Assert
+
 ```csharp
 [Fact]
 public async Task CalculateAsync_ValidPromo_ReturnsExpectedDiscount()
@@ -63,6 +67,7 @@ public async Task CalculateAsync_ValidPromo_ReturnsExpectedDiscount()
 ```
 
 ### Test Class Structure
+
 ```csharp
 public class DiscountCalculatorTests
 {
@@ -80,6 +85,7 @@ public class DiscountCalculatorTests
 ```
 
 ### Theory for parameterised tests
+
 ```csharp
 [Theory]
 [InlineData(100, 20, 20)]    // 20% of 100 = 20
@@ -93,6 +99,7 @@ public async Task CalculateAsync_VariousAmounts_CalculatesCorrectly(
 ```
 
 ### Integration Test (WebApplicationFactory)
+
 ```csharp
 public class OrderEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 {
@@ -149,21 +156,111 @@ class TestDiscountCalculator:
 ## React / Vitest Patterns
 
 ```typescript
-describe('useDiscount', () => {
-  it('returns discount when valid promo applied', async () => {
+describe("useDiscount", () => {
+  it("returns discount when valid promo applied", async () => {
     // Arrange
     server.use(
-      http.post('/api/discounts/calculate', () =>
-        HttpResponse.json({ amount: 20, rule: 'SAVE20' })
-      )
+      http.post("/api/discounts/calculate", () =>
+        HttpResponse.json({ amount: 20, rule: "SAVE20" }),
+      ),
     );
 
     // Act
-    const { result } = renderHook(() => useDiscount('SAVE20', 100));
+    const { result } = renderHook(() => useDiscount("SAVE20", 100));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     // Assert
     expect(result.current.data?.amount).toBe(20);
+  });
+});
+```
+
+## Node.js / Mocha Patterns
+
+### Arrange-Act-Assert with Chai
+
+```javascript
+const { expect } = require("chai");
+const { DiscountCalculator } = require("../src/discount-calculator");
+
+describe("DiscountCalculator", () => {
+  let promoRepoMock;
+  let sut;
+
+  beforeEach(() => {
+    promoRepoMock = {
+      getByCode: async (code) => {
+        if (code === "SAVE20") return { discountPercent: 20, isActive: true };
+        return null;
+      },
+    };
+    sut = new DiscountCalculator(promoRepoMock);
+  });
+
+  describe("calculateDiscount", () => {
+    it("returns expected discount for valid promo code", async () => {
+      // Arrange
+      const order = { orderId: "ord-101", subtotal: 100, promoCode: "SAVE20" };
+
+      // Act
+      const result = await sut.calculateDiscount(order);
+
+      // Assert
+      expect(result.isSuccess).to.be.true;
+      expect(result.discountAmount).to.equal(20);
+    });
+
+    it("returns error when promo code is expired or invalid", async () => {
+      // Arrange
+      promoRepoMock.getByCode = async () => null;
+      const order = { orderId: "ord-102", subtotal: 100, promoCode: "INVALID" };
+
+      // Act
+      const result = await sut.calculateDiscount(order);
+
+      // Assert
+      expect(result.isSuccess).to.be.false;
+      expect(result.error).to.equal("PROMO_NOT_FOUND");
+    });
+  });
+});
+```
+
+### Parameterised Tests (Data-Driven in Mocha)
+
+```javascript
+const { expect } = require("chai");
+const { calculateTax } = require("../src/tax-calculator");
+
+describe("calculateTax", () => {
+  const cases = [
+    { amount: 100, rate: 0.1, expected: 10 },
+    { amount: 50, rate: 0.08, expected: 4 },
+    { amount: 0, rate: 0.2, expected: 0 },
+  ];
+
+  cases.forEach(({ amount, rate, expected }) => {
+    it(`calculates tax on ${amount} at ${rate * 100}% as ${expected}`, () => {
+      const tax = calculateTax(amount, rate);
+      expect(tax).to.equal(expected);
+    });
+  });
+});
+```
+
+### Async Error Handling
+
+```javascript
+describe("OrderService", () => {
+  it("throws NotFoundError for missing order", async () => {
+    const service = new OrderService();
+    try {
+      await service.getOrderById("missing-id");
+      expect.fail("Should have thrown NotFoundError");
+    } catch (err) {
+      expect(err.name).to.equal("NotFoundError");
+      expect(err.status).to.equal(404);
+    }
   });
 });
 ```

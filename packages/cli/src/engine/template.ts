@@ -380,6 +380,32 @@ async function renderMergedFile(
     sections.push("");
   }
 
+  const frameworks = Array.isArray(context.framework)
+    ? (context.framework as string[])
+    : [];
+  const hasMocha =
+    frameworks.includes("mocha") ||
+    String(context.techStack || "").includes("Mocha");
+  const hasNode =
+    frameworks.includes("nodejs") ||
+    String(context.techStack || "").includes("Node.js");
+
+  if (hasNode || hasMocha) {
+    sections.push("## Node.js & Mocha Standards");
+    sections.push("");
+    if (hasNode) {
+      sections.push(
+        "- **Node.js**: Adhere to modern asynchronous patterns (`async`/`await`), handle stream backpressure, avoid unhandled rejections, and conform to the project module system (ESM or CommonJS).",
+      );
+    }
+    if (hasMocha) {
+      sections.push(
+        "- **Mocha**: Write BDD-style test suites using `describe` and `it` blocks. Run tests via `npm test` or `npx mocha`. Maintain clean isolation with `beforeEach` and `afterEach` hooks.",
+      );
+    }
+    sections.push("");
+  }
+
   sections.push("## Agent Roles");
   sections.push("");
   sections.push(
@@ -494,6 +520,31 @@ function generateRootInstruction(
       lines.push(
         "Gate 0 Check → Ticket Intake → HAR Analysis → Telemetry Investigation → Codebase Investigation → Confidence Scoring → Jira RCA Publication",
       );
+      lines.push("");
+    }
+    const frameworks = Array.isArray(context.framework)
+      ? (context.framework as string[])
+      : [];
+    const hasMocha =
+      frameworks.includes("mocha") ||
+      String(context.techStack || "").includes("Mocha");
+    const hasNode =
+      frameworks.includes("nodejs") ||
+      String(context.techStack || "").includes("Node.js");
+
+    if (hasNode || hasMocha) {
+      lines.push("## Development & Testing Conventions (Node.js & Mocha)");
+      lines.push("");
+      if (hasNode) {
+        lines.push(
+          "- **Node.js**: Adhere to modern asynchronous patterns (`async`/`await`), handle resource lifecycles cleanly (database connections, streams, server handles), and follow modular separation.",
+        );
+      }
+      if (hasMocha) {
+        lines.push(
+          "- **Mocha**: Use BDD-style `describe` and `it` blocks for test organization. Run test suites with `npm test` or `npx mocha`. Reset shared mocks and stubs in `afterEach` hooks.",
+        );
+      }
       lines.push("");
     }
     lines.push("## Agent Details");
@@ -729,11 +780,14 @@ function getMemoryFile(platform: Platform): string {
 function frameworkLabel(f: string): string {
   const map: Record<string, string> = {
     dotnet8: ".NET 8",
+    nodejs: "Node.js",
     react: "React",
     nextjs: "Next.js",
     fastapi: "FastAPI",
     angular: "Angular",
     vue: "Vue.js",
+    "spring-boot": "Spring Boot",
+    express: "Express",
     mocha: "Mocha",
   };
   return map[f] || f;
@@ -745,6 +799,7 @@ function languageLabel(l: string): string {
     typescript: "TypeScript",
     python: "Python",
     javascript: "JavaScript",
+    nodejs: "Node.js",
     rust: "Rust",
     go: "Go",
     java: "Java",

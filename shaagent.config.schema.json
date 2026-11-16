@@ -47,7 +47,7 @@
         "framework": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Frameworks in use (e.g., dotnet8, react, nextjs, fastapi)"
+          "description": "Frameworks in use (e.g., dotnet8, nodejs, mocha, react, nextjs, fastapi)"
         },
         "infrastructure": {
           "type": "string",

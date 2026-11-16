@@ -116,7 +116,7 @@ platform's global skill directory.
 | `graphify`      | Codebase knowledge graph (service map, deps)       | `~/.config/opencode/skills/graphify/SKILL.md`      |
 | `caveman`       | Token compression + progressive simplification     | `~/.config/opencode/skills/caveman/SKILL.md`       |
 | `review`        | Systematic code review (.NET-focused)              | `~/.config/opencode/skills/review/SKILL.md`        |
-| `tdd`           | Red-Green-Refactor (xUnit/pytest/Vitest)           | `~/.config/opencode/skills/tdd/SKILL.md`           |
+| `tdd`           | Red-Green-Refactor (xUnit/pytest/Vitest/Mocha)     | `~/.config/opencode/skills/tdd/SKILL.md`           |
 | `security-scan` | OWASP-aligned security audit for .NET              | `~/.config/opencode/skills/security-scan/SKILL.md` |
 | `arch-review`   | Architecture fitness functions (microservices)     | `~/.config/opencode/skills/arch-review/SKILL.md`   |
 | `solid-dev`     | Architecture alignment, naming conventions & SOLID | `~/.config/opencode/skills/solid-dev/SKILL.md`     |
@@ -367,7 +367,7 @@ This scaffold is optimised for:
 - **Python 3.11+** — 5% (utilities, scripts, FastAPI services)
 - **React 18 / TypeScript** — 5% (frontend applications)
 - **Architecture:** DDD, CQRS, Event Sourcing, Clean Architecture
-- **Testing:** xUnit + Moq + FluentAssertions, pytest, Vitest
+- **Testing:** xUnit + Moq + FluentAssertions, pytest, Vitest, Mocha
 - **Infrastructure:** AWS / Azure / GCP + Kubernetes
 
 ---

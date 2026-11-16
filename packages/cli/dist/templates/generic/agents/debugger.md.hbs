@@ -47,6 +47,9 @@ Note current branch, recent changes near the reported area.
 - Create the smallest throwaway setup that triggers the failure — a script, a single failing test, a curl call, a tiny input file.
 - All artifacts go under one scratch folder (e.g. `.shaagent-repro/`).
 - Prefer running the real code path over re-implementing it. Isolate, don't rewrite.
+{{#if (or (includes framework "nodejs") (includes framework "mocha"))}}
+- **Node.js & Mocha Repro**: Create an isolated scratch script (`.shaagent-repro/repro.js`) or minimal Mocha spec (`.shaagent-repro/repro.spec.js` run via `npx mocha .shaagent-repro/repro.spec.js`). Never mutate existing dependencies or `package.json`.
+{{/if}}
 
 ### 4. Run it and capture evidence
 - Execute the reproduction. Capture the exact error, stack trace, exit code, or wrong output.

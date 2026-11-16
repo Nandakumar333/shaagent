@@ -276,6 +276,13 @@ describe('prompts', () => {
       expect(suiteQ?.when).toBe(false);
       const platformQ = flagged.find(q => q.name === 'platform');
       expect(platformQ?.when).toBe(false);
+
+      // Verify nodejs and mocha choices in framework question
+      const frameworkQ = questions.find(q => q.name === 'framework') as any;
+      expect(frameworkQ).toBeDefined();
+      const frameworkValues = frameworkQ.choices.map((c: any) => c.value);
+      expect(frameworkValues).toContain('nodejs');
+      expect(frameworkValues).toContain('mocha');
     });
   });
 });

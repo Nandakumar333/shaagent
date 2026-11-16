@@ -365,4 +365,52 @@ describe('engine/template — renderAgents', () => {
       expect(content).toContain('Jira RCA Publication');
     });
   });
+
+  describe('nodejs and mocha framework support', () => {
+    it('should generate AGENTS.md with Node.js & Mocha conventions in github-copilot', async () => {
+      const answers = makeAnswers('github-copilot');
+      answers.framework = ['nodejs', 'mocha'];
+      await renderAgents(answers);
+
+      const agentsMdPath = path.join(tempDir, 'AGENTS.md');
+      expect(await fs.pathExists(agentsMdPath)).toBe(true);
+      const content = await fs.readFile(agentsMdPath, 'utf-8');
+      expect(content).toContain('## Development & Testing Conventions (Node.js & Mocha)');
+      expect(content).toContain('Node.js');
+      expect(content).toContain('Mocha');
+    });
+
+    it('should include Node.js & Mocha standards in codex AGENTS.md', async () => {
+      const answers = makeAnswers('codex');
+      answers.framework = ['nodejs', 'mocha'];
+      await renderAgents(answers);
+
+      const agentsMdPath = path.join(tempDir, 'AGENTS.md');
+      expect(await fs.pathExists(agentsMdPath)).toBe(true);
+      const content = await fs.readFile(agentsMdPath, 'utf-8');
+      expect(content).toContain('## Node.js & Mocha Standards');
+      expect(content).toContain('npm test');
+      expect(content).toContain('describe');
+    });
+
+    it('should render agent templates with Node.js and Mocha guidelines', async () => {
+      const answers = makeAnswers('opencode');
+      answers.framework = ['nodejs', 'mocha'];
+      answers.coreAgents = ['dev', 'qa', 'debugger', 'planner'];
+      await renderAgents(answers);
+
+      const qaPath = path.join(tempDir, '.opencode', 'agents', 'qa.md');
+      const qaContent = await fs.readFile(qaPath, 'utf-8');
+      expect(qaContent).toContain('Node.js & Mocha Test Guidelines');
+      expect(qaContent).toContain('npx mocha');
+
+      const devPath = path.join(tempDir, '.opencode', 'agents', 'dev.md');
+      const devContent = await fs.readFile(devPath, 'utf-8');
+      expect(devContent).toContain('Node.js & Mocha Development Standards');
+
+      const debuggerPath = path.join(tempDir, '.opencode', 'agents', 'debugger.md');
+      const debuggerContent = await fs.readFile(debuggerPath, 'utf-8');
+      expect(debuggerContent).toContain('Node.js & Mocha Repro');
+    });
+  });
 });

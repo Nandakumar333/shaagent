@@ -108,6 +108,9 @@ Write `{{planDir}}/{ticketNumber}-plan.md` with exactly this structure:
 - **Integration tests:** {description}
 - **Regression:** existing tests must still pass after modification
 - **Run command:** `{test command}`
+{{#if (or (includes framework "mocha") (includes framework "nodejs"))}}
+- **Node.js & Mocha Test Commands:** Specify exact Mocha test execution commands (e.g. `npm test`, `npx mocha tests/**/*.spec.js`, or `npx mocha --grep "{test name}"`).
+{{/if}}
 
 ## Build & Run Commands (for Dev agent)
 ```bash

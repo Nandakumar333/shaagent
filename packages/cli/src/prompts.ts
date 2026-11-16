@@ -162,7 +162,7 @@ export const SKILLS = [
     checked: true,
   },
   {
-    name: "tdd           — Red-Green-Refactor TDD cycle (xUnit/pytest/Vitest)",
+    name: "tdd           — Red-Green-Refactor TDD cycle (xUnit/pytest/Vitest/Mocha)",
     value: "tdd",
     checked: false,
   },
@@ -242,6 +242,7 @@ export function getQuestions(
       message: "Framework(s)?",
       choices: [
         { name: ".NET 8 / ASP.NET Core", value: "dotnet8" },
+        { name: "Node.js", value: "nodejs" },
         { name: "React", value: "react" },
         { name: "Next.js", value: "nextjs" },
         { name: "FastAPI", value: "fastapi" },

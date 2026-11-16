@@ -25346,7 +25346,7 @@ var SKILLS = [
     checked: true
   },
   {
-    name: "tdd           \u2014 Red-Green-Refactor TDD cycle (xUnit/pytest/Vitest)",
+    name: "tdd           \u2014 Red-Green-Refactor TDD cycle (xUnit/pytest/Vitest/Mocha)",
     value: "tdd",
     checked: false
   },
@@ -25420,6 +25420,7 @@ function getQuestions(platformFlag, scopeFlag, suiteFlag) {
       message: "Framework(s)?",
       choices: [
         { name: ".NET 8 / ASP.NET Core", value: "dotnet8" },
+        { name: "Node.js", value: "nodejs" },
         { name: "React", value: "react" },
         { name: "Next.js", value: "nextjs" },
         { name: "FastAPI", value: "fastapi" },
@@ -26057,6 +26058,24 @@ async function renderMergedFile(agents, context, _platform) {
     sections.push(`${context.infrastructure}`);
     sections.push("");
   }
+  const frameworks = Array.isArray(context.framework) ? context.framework : [];
+  const hasMocha = frameworks.includes("mocha") || String(context.techStack || "").includes("Mocha");
+  const hasNode = frameworks.includes("nodejs") || String(context.techStack || "").includes("Node.js");
+  if (hasNode || hasMocha) {
+    sections.push("## Node.js & Mocha Standards");
+    sections.push("");
+    if (hasNode) {
+      sections.push(
+        "- **Node.js**: Adhere to modern asynchronous patterns (`async`/`await`), handle stream backpressure, avoid unhandled rejections, and conform to the project module system (ESM or CommonJS)."
+      );
+    }
+    if (hasMocha) {
+      sections.push(
+        "- **Mocha**: Write BDD-style test suites using `describe` and `it` blocks. Run tests via `npm test` or `npx mocha`. Maintain clean isolation with `beforeEach` and `afterEach` hooks."
+      );
+    }
+    sections.push("");
+  }
   sections.push("## Agent Roles");
   sections.push("");
   sections.push(
@@ -26149,6 +26168,24 @@ function generateRootInstruction(agents, platform, context) {
       lines.push(
         "Gate 0 Check \u2192 Ticket Intake \u2192 HAR Analysis \u2192 Telemetry Investigation \u2192 Codebase Investigation \u2192 Confidence Scoring \u2192 Jira RCA Publication"
       );
+      lines.push("");
+    }
+    const frameworks = Array.isArray(context.framework) ? context.framework : [];
+    const hasMocha = frameworks.includes("mocha") || String(context.techStack || "").includes("Mocha");
+    const hasNode = frameworks.includes("nodejs") || String(context.techStack || "").includes("Node.js");
+    if (hasNode || hasMocha) {
+      lines.push("## Development & Testing Conventions (Node.js & Mocha)");
+      lines.push("");
+      if (hasNode) {
+        lines.push(
+          "- **Node.js**: Adhere to modern asynchronous patterns (`async`/`await`), handle resource lifecycles cleanly (database connections, streams, server handles), and follow modular separation."
+        );
+      }
+      if (hasMocha) {
+        lines.push(
+          "- **Mocha**: Use BDD-style `describe` and `it` blocks for test organization. Run test suites with `npm test` or `npx mocha`. Reset shared mocks and stubs in `afterEach` hooks."
+        );
+      }
       lines.push("");
     }
     lines.push("## Agent Details");
@@ -26345,11 +26382,14 @@ function getMemoryFile(platform) {
 function frameworkLabel(f) {
   const map = {
     dotnet8: ".NET 8",
+    nodejs: "Node.js",
     react: "React",
     nextjs: "Next.js",
     fastapi: "FastAPI",
     angular: "Angular",
     vue: "Vue.js",
+    "spring-boot": "Spring Boot",
+    express: "Express",
     mocha: "Mocha"
   };
   return map[f] || f;
@@ -26360,6 +26400,7 @@ function languageLabel(l) {
     typescript: "TypeScript",
     python: "Python",
     javascript: "JavaScript",
+    nodejs: "Node.js",
     rust: "Rust",
     go: "Go",
     java: "Java"

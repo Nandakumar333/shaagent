@@ -46,6 +46,18 @@ Follow the patterns and conventions identified in the Researcher's report and th
 ### Stack-Specific Notes
 Tech stack: {{techStack}}
 {{/if}}
+{{#if (or (includes framework "nodejs") (includes framework "mocha"))}}
+
+### Node.js & Mocha Development Standards
+- **Node.js Best Practices**:
+  - Implement robust asynchronous control flow with `async`/`await`. Guard against unhandled rejections.
+  - Correctly handle streams, event emitters, and pipe errors (`stream.pipeline` / `events.once`).
+  - Follow the project's module format: CommonJS (`require` / `module.exports`) or ESM (`import` / `export`) as configured in `package.json`.
+  - Cleanly dispose of external resources (close database connections, network pools, and file handles).
+- **Mocha Testability**:
+  - Design services and functions with loose coupling and dependency injection so they can be seamlessly exercised by Mocha test suites without requiring global state.
+  - Verify your changes with `npm test` or `npx mocha` prior to reporting completion.
+{{/if}}
 
 ## Build Verification (mandatory after implementation)
 
