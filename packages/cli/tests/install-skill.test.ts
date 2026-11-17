@@ -16,6 +16,7 @@ describe('install-skill', () => {
       expect(validateSkillName('security-scan')).toBe(true);
       expect(validateSkillName('arch-review')).toBe(true);
       expect(validateSkillName('solid-dev')).toBe(true);
+      expect(validateSkillName('bmad')).toBe(true);
       expect(validateSkillName('my_skill')).toBe(true);
       expect(validateSkillName('skill123')).toBe(true);
     });
@@ -93,6 +94,13 @@ describe('install-skill', () => {
       expect(await fs.pathExists(solidInstalled)).toBe(true);
       expect(await fs.pathExists(path.join(solidInstalled, 'SKILL.md'))).toBe(true);
       expect(await fs.pathExists(path.join(solidInstalled, 'references', 'architecture-decision-matrix.md'))).toBe(true);
+
+      await installSkill('bmad', 'opencode', 'project');
+      const bmadInstalled = path.join(tempDir, '.opencode', 'skills', 'bmad');
+      expect(await fs.pathExists(bmadInstalled)).toBe(true);
+      expect(await fs.pathExists(path.join(bmadInstalled, 'SKILL.md'))).toBe(true);
+      expect(await fs.pathExists(path.join(bmadInstalled, 'references', 'artifact-templates.md'))).toBe(true);
+      expect(await fs.pathExists(path.join(bmadInstalled, 'references', 'workflow-tracks.md'))).toBe(true);
     });
   });
 
@@ -135,7 +143,7 @@ describe('install-skill', () => {
         expect(choiceValues).not.toContain('solid-dev');
         expect(choiceValues).not.toContain('security-scan');
         expect(choiceValues).not.toContain('arch-review');
-        expect(choiceValues).toEqual(expect.arrayContaining(['graphify', 'caveman', 'tdd']));
+        expect(choiceValues).toEqual(expect.arrayContaining(['graphify', 'caveman', 'tdd', 'bmad']));
 
         for (const expectedSkill of ['review', 'solid-dev', 'security-scan', 'arch-review', 'tdd']) {
           expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', expectedSkill, 'SKILL.md'))).toBe(true);
@@ -182,6 +190,35 @@ describe('install-skill', () => {
           expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', expectedSkill, 'SKILL.md'))).toBe(true);
         }
         expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', 'tdd', 'SKILL.md'))).toBe(false);
+        expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', 'bmad', 'SKILL.md'))).toBe(false);
+      } finally {
+        process.chdir(originalCwd);
+        await fs.remove(tempDir);
+      }
+    });
+
+    it('updates shaagent.config.json skills.installed when installing bmad into an initialized project', async () => {
+      const tempDir = path.join(os.tmpdir(), `shaagent-skill-cfg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      const originalCwd = process.cwd();
+      await fs.ensureDir(tempDir);
+      process.chdir(tempDir);
+
+      try {
+        await fs.writeJson(path.join(tempDir, 'shaagent.config.json'), {
+          platform: 'opencode',
+          scope: 'project',
+          skills: {
+            installed: ['review', 'solid-dev', 'security-scan', 'arch-review'],
+          },
+        });
+
+        const { skillCommand } = await import('../src/install-skill');
+        const cmd = skillCommand();
+        await cmd.parseAsync(['node', 'test', 'install', 'bmad']);
+
+        expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', 'bmad', 'SKILL.md'))).toBe(true);
+        const updatedConfig = await fs.readJson(path.join(tempDir, 'shaagent.config.json'));
+        expect(updatedConfig.skills.installed).toContain('bmad');
       } finally {
         process.chdir(originalCwd);
         await fs.remove(tempDir);

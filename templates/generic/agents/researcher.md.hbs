@@ -27,6 +27,17 @@ git branch -a
 ```
 Current branch, recent activity, active development areas.
 
+### 1b. BMAD Context & Documentation Discovery (if `bmad` skill is installed)
+{{#if (includes skills "bmad")}}
+The `bmad` skill is installed — load `use skill bmad` immediately:
+{{else}}
+Check whether the `bmad` skill is installed in your available skills; if installed, load `use skill bmad`:
+{{/if}}
+- Read `docs/project-context.md` (or `_bmad-output/project-context.md`) first to anchor on established architecture rules, naming conventions, and domain invariants.
+- Inspect existing `docs/prd/`, `docs/architecture/`, and `docs/decisions/` artifacts relevant to the affected modules.
+- Identify candidate Functional Requirements (`FR-*`), Non-Functional Requirements (`NFR-*`), and documentation files (`README.md`, `docs/`, OpenAPI/schemas) that will require updates.
+- Flag explicitly in your report if `docs/project-context.md` does not yet exist so downstream agents can bootstrap it.
+
 ### 2. Codebase Exploration
 - Search for relevant classes, interfaces, and functions
 - Map service boundaries and module dependencies

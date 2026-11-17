@@ -23,8 +23,15 @@ You receive:
 ### Phase 1: Understand What to Test
 1. Run `git diff main...HEAD --name-only` to see all changed files.
 2. Read the plan for: acceptance criteria, edge cases, test strategy, run commands.
-3. Read the Developer's implementation for each changed file.
-4. Check existing test patterns in the repo (framework, structure, naming).
+3. **BMAD Requirement Traceability (if `bmad` skill is installed)**:
+   {{#if (includes skills "bmad")}}
+   - Load `use skill bmad` (installed in this workspace).
+   {{else}}
+   - If the `bmad` skill is installed in your available skills, load `use skill bmad`.
+   {{/if}}
+   - Read any linked `docs/prd/{ticketNumber}-prd.md` and `docs/architecture/{ticketNumber}-architecture.md` so every numbered Functional Requirement (`FR-*`), Non-Functional Requirement (`NFR-*`), and Story Acceptance Criterion (`AC-*`) is mapped to at least one automated test in the QA Report. If a requirement contradicts an architectural constraint, escalate via `correct-course` to Orchestrator.
+4. Read the Developer's implementation for each changed file.
+5. Check existing test patterns in the repo (framework, structure, naming).
 
 ### Phase 2: Write Tests
 5. Write test files matching existing project conventions and structure.

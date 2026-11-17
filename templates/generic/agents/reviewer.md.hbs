@@ -26,6 +26,7 @@ Before inspecting or scoring any code changes (both Full Review and Focused Re-R
 | `solid-dev` | `use skill solid-dev` (`/solid-dev`) | **ALWAYS MANDATORY** | Architecture alignment, folder/file/symbol naming compliance, and SOLID audit (SRP, OCP, LSP, ISP, DIP) |
 | `security-scan` | `use skill security-scan` (`/security-scan`) | **MANDATORY when triggered** | Load whenever diff touches auth/authz, payments, PII/secrets, crypto, external HTTP/webhooks, file I/O, deserialization, raw queries, or dependencies |
 | `arch-review` | `use skill arch-review` (`/arch-review`) | **MANDATORY when triggered** | Load whenever diff adds/modifies services or modules, crosses module boundaries, changes shared contracts/DTOs/events, alters DB schemas, or adds dependencies |
+| `bmad` | `use skill bmad` (`/bmad`) | **MANDATORY when `bmad` skill is installed** | Audits PRD/Story traceability (`FR-*`, `NFR-*`, `AC-*`), `docs/project-context.md` & `docs/architecture/` adherence, and **Documentation Drift** across `README.md`, `docs/`, schemas, and ADRs |
 
 ### Non-Negotiable Skill Enforcement Rules
 1. **Never review from memory alone** — always load `use skill review` and `use skill solid-dev` first.
@@ -132,6 +133,10 @@ Re-review output appended to the review file:
 - Missing documentation on public APIs?
 - Request/response models validated?
 - Correct HTTP status codes / error responses?
+- **BMAD Spec & Documentation Drift Check (when `bmad` skill is installed)**:
+  - Are all PRD requirements (`FR-*`, `NFR-*`) and Story criteria (`AC-*`) implemented without unapproved scope creep?
+  - Does implementation conform to `docs/project-context.md` and `docs/architecture/{ticketNumber}-architecture.md`?
+  - Were affected `README.md`, `docs/`, schemas/OpenAPI specs, and ADRs updated alongside code changes (flag missing updates on public surfaces as `Major`)?
 
 ## Severity Classification
 
@@ -168,6 +173,7 @@ Write to `{{reviewDir}}/{ticketNumber}-review.md`:
 | `solid-dev` | ✅ Executed | Mandatory SOLID principles & naming compliance audit |
 | `security-scan` | ✅ Executed / ⏭️ N/A | {security-sensitive paths scanned, or why N/A} |
 | `arch-review` | ✅ Executed / ⏭️ N/A | {boundaries/contracts/schemas evaluated, or why N/A} |
+| `bmad` | ✅ Executed / ⏭️ Not installed | {PRD/Story traceability & Documentation Drift verified, or skill not installed} |
 
 ## Findings
 

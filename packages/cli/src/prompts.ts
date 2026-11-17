@@ -189,6 +189,11 @@ export const OPTIONAL_SKILLS = [
     value: "tdd",
     checked: false,
   },
+  {
+    name: "bmad          — BMAD agile AI-driven development & progressive doc flow",
+    value: "bmad",
+    checked: false,
+  },
 ];
 
 export const SKILLS = [...MANDATORY_SKILLS, ...OPTIONAL_SKILLS];

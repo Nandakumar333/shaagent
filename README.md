@@ -119,6 +119,19 @@ Skills are Markdown files that extend agent capabilities. Mandatory skills (`rev
 | `graphify`      | Optional    | Codebase knowledge graph (service map, deps)       | `~/.config/opencode/skills/graphify/SKILL.md`      |
 | `caveman`       | Optional    | Token compression + progressive simplification     | `~/.config/opencode/skills/caveman/SKILL.md`       |
 | `tdd`           | Optional    | Red-Green-Refactor (xUnit/pytest/Vitest/Mocha)     | `~/.config/opencode/skills/tdd/SKILL.md`           |
+| `bmad`          | Optional    | BMAD agile AI-driven dev & progressive doc flow    | `~/.config/opencode/skills/bmad/SKILL.md`          |
+
+### Conditional BMAD Development & Documentation Flow
+
+When the **`bmad`** skill is installed (`shaagent skill install bmad` or selected during `shaagent init`), the Orchestrator and sub-agents automatically upgrade to the **BMAD Progressive Context & Documentation Flow**:
+
+- **Project Constitution (`docs/project-context.md`)**: Living tech-stack, convention, and boundary rules anchored before planning or coding.
+- **Scale-Adaptive Tracks**:
+  - `Quick Flow`: Streamlined Tech-Spec in `plans/{ticket}-plan.md` for small, isolated changes.
+  - `BMAD Method`: Progressive doc chain (`docs/prd/{ticket}-prd.md` → `docs/architecture/{ticket}-architecture.md` → Implementation Readiness Gate → Story-driven `plans/{ticket}-plan.md`).
+  - `Enterprise`: Full BMAD chain + ADRs (`docs/decisions/`) + `SECURITY` & `ARCHITECTURE-REVIEWER` + living documentation sync.
+- **Zero Doc-Drift Enforcement**: `DEV` updates affected docs alongside code, `QA` verifies `FR-*` / `NFR-*` / `AC-*` traceability, `REVIEWER` audits documentation drift, and `PROJECT-MEMORY-CREATOR` keeps `docs/project-context.md` synchronized post-commit.
+- If `bmad` is **not** installed, agents run the standard ShaAgent pipeline with zero extra ceremony.
 
 Install skills later:
 
@@ -197,6 +210,8 @@ Add pipeline instructions alongside your task:
 | `no review` / `skip review`         | Skip reviewer + reviewer-fix                          |
 | `security only`                     | Preset: researcher + dev + security                   |
 | `with memory`                       | Force project-memory-creator post-commit              |
+| `bmad` / `bmad quick` / `bmad full` | Select BMAD track (`method` / `quick` / `enterprise`) |
+| `with docs` / `doc flow`            | Force progressive docs & `docs/project-context.md`    |
 
 ### Examples
 

@@ -446,4 +446,116 @@ describe('engine/template — renderAgents', () => {
       expect(orchestratorContent).toContain('Skills Applied');
     });
   });
+
+  describe('BMAD skill & conditional flow integration', () => {
+    it('should activate pre-configured BMAD development & documentation flow when bmad skill is installed', async () => {
+      const answers = makeAnswers('opencode');
+      answers.optionalAgents = ['project-memory-creator', 'architecture-reviewer'];
+      answers.skills = ['review', 'solid-dev', 'security-scan', 'arch-review', 'bmad'];
+      await renderAgents(answers);
+
+      const orchestratorContent = await fs.readFile(
+        path.join(tempDir, '.opencode', 'agents', 'orchestrator.md'),
+        'utf-8',
+      );
+      expect(orchestratorContent).toContain('BMAD Development & Documentation Flow');
+      expect(orchestratorContent).toContain('BMAD Status: INSTALLED & ACTIVE');
+      expect(orchestratorContent).toContain('use skill bmad');
+      expect(orchestratorContent).toContain('docs/project-context.md');
+      expect(orchestratorContent).toContain('Quick Flow');
+      expect(orchestratorContent).toContain('BMAD Method');
+      expect(orchestratorContent).toContain('Implementation Readiness');
+
+      const plannerContent = await fs.readFile(
+        path.join(tempDir, '.opencode', 'agents', 'planner.md'),
+        'utf-8',
+      );
+      expect(plannerContent).toContain('use skill bmad');
+      expect(plannerContent).toContain('docs/prd/');
+      expect(plannerContent).toContain('docs/architecture/');
+      expect(plannerContent).toContain('Implementation Readiness');
+
+      const researcherContent = await fs.readFile(
+        path.join(tempDir, '.opencode', 'agents', 'researcher.md'),
+        'utf-8',
+      );
+      expect(researcherContent).toContain('docs/project-context.md');
+      expect(researcherContent).toContain('use skill bmad');
+
+      const devContent = await fs.readFile(
+        path.join(tempDir, '.opencode', 'agents', 'dev.md'),
+        'utf-8',
+      );
+      expect(devContent).toContain('use skill bmad');
+      expect(devContent).toContain('docs/project-context.md');
+      expect(devContent).toContain('correct-course');
+
+      const qaContent = await fs.readFile(
+        path.join(tempDir, '.opencode', 'agents', 'qa.md'),
+        'utf-8',
+      );
+      expect(qaContent).toContain('use skill bmad');
+      expect(qaContent).toContain('FR-');
+
+      const reviewerContent = await fs.readFile(
+        path.join(tempDir, '.opencode', 'agents', 'reviewer.md'),
+        'utf-8',
+      );
+      expect(reviewerContent).toContain('use skill bmad');
+      expect(reviewerContent).toContain('Documentation Drift');
+
+      const memoryContent = await fs.readFile(
+        path.join(tempDir, '.opencode', 'agents', 'project-memory-creator.md'),
+        'utf-8',
+      );
+      expect(memoryContent).toContain('docs/project-context.md');
+      expect(memoryContent).toContain('use skill bmad');
+    });
+
+    it('should include runtime conditional BMAD detection when bmad is not pre-selected at init time', async () => {
+      const answers = makeAnswers('opencode');
+      answers.skills = ['review', 'solid-dev', 'security-scan', 'arch-review'];
+      await renderAgents(answers);
+
+      const orchestratorContent = await fs.readFile(
+        path.join(tempDir, '.opencode', 'agents', 'orchestrator.md'),
+        'utf-8',
+      );
+      expect(orchestratorContent).not.toContain('BMAD Status: INSTALLED & ACTIVE');
+      expect(orchestratorContent).toContain('If the `bmad` skill is installed');
+      expect(orchestratorContent).toContain('use skill bmad');
+    });
+
+    it('should include BMAD flow section in root instruction files (AGENTS.md, CLAUDE.md, GEMINI.md, codex) when bmad skill is installed', async () => {
+      const copilotAnswers = makeAnswers('github-copilot');
+      copilotAnswers.skills = ['bmad'];
+      await renderAgents(copilotAnswers);
+      const copilotAgentsMd = await fs.readFile(path.join(tempDir, 'AGENTS.md'), 'utf-8');
+      expect(copilotAgentsMd).toContain('BMAD Development & Documentation Flow');
+
+      const claudeAnswers = makeAnswers('claude-code');
+      claudeAnswers.skills = ['bmad'];
+      await renderAgents(claudeAnswers);
+      const claudeMd = await fs.readFile(path.join(tempDir, 'CLAUDE.md'), 'utf-8');
+      expect(claudeMd).toContain('BMAD Development & Documentation Flow');
+
+      const codexAnswers = makeAnswers('codex');
+      codexAnswers.skills = ['bmad'];
+      await renderAgents(codexAnswers);
+      const codexAgentsMd = await fs.readFile(path.join(tempDir, 'AGENTS.md'), 'utf-8');
+      expect(codexAgentsMd).toContain('BMAD Development & Documentation Flow');
+
+      const geminiAnswers = makeAnswers('gemini-cli');
+      geminiAnswers.skills = ['bmad'];
+      await renderAgents(geminiAnswers);
+      const geminiMd = await fs.readFile(path.join(tempDir, 'GEMINI.md'), 'utf-8');
+      expect(geminiMd).toContain('BMAD Development & Documentation Flow');
+
+      const noBmadCopilot = makeAnswers('github-copilot');
+      noBmadCopilot.skills = ['review', 'solid-dev'];
+      await renderAgents(noBmadCopilot);
+      const noBmadAgentsMd = await fs.readFile(path.join(tempDir, 'AGENTS.md'), 'utf-8');
+      expect(noBmadAgentsMd).not.toContain('BMAD Development & Documentation Flow');
+    });
+  });
 });

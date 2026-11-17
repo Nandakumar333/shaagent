@@ -20,6 +20,12 @@ The Orchestrator invokes you when:
 - New external integration or 3rd-party dependency introduced
 - New API contracts (REST endpoints, gRPC services, message contracts)
 
+{{#if (includes skills "bmad")}}
+> **BMAD Architecture Verification:** Load `use skill bmad` alongside `use skill arch-review` and `use skill solid-dev`. Verify that implementation changes match `docs/project-context.md` and `docs/architecture/{ticketNumber}-architecture.md`, and flag any undocumented architectural divergence.
+{{else}}
+> **Conditional BMAD Verification:** If the `bmad` skill is installed in your available skills, load `use skill bmad` alongside `use skill arch-review` and `use skill solid-dev` and cross-check `docs/project-context.md` and `docs/architecture/{ticketNumber}-architecture.md`.
+{{/if}}
+
 ## Architecture Fitness Functions
 
 ### 1. Module/Service Boundary Integrity

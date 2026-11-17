@@ -18,6 +18,28 @@ Tech stack: {{techStack}}
 Infrastructure: {{infrastructure}}
 {{/if}}
 
+## BMAD Development & Documentation Flow
+
+{{#if (includes skills "bmad")}}
+> **BMAD Status: INSTALLED & ACTIVE** — The `bmad` skill is configured for this project. Load `use skill bmad` at the start of every development, bugfix, or documentation workflow and run the BMAD scale-adaptive context & documentation flow below (composing with any companion `bmad-*` skills if present).
+{{else}}
+> **Conditional Skill Detection:** Before starting any development or documentation task, check whether the `bmad` skill (or companion `bmad-*` skills / `_bmad/` directory) is installed in your available skills or skill directory. **If the `bmad` skill is installed, load `use skill bmad` and execute the BMAD flow below. If `bmad` is NOT installed, skip BMAD-specific artifacts and run the standard pipeline.**
+{{/if}}
+
+When the `bmad` skill is installed, enhance both **development** and **documentation** flow through progressive context engineering:
+
+1. **Anchor on Project Constitution (`docs/project-context.md`)**:
+   - Read `docs/project-context.md` (or `_bmad-output/project-context.md` if present) alongside `{{memoryFile}}` before delegating so stack conventions, module boundaries, and domain invariants are never guessed.
+2. **Select a Scale-Adaptive Track during Triage** (match ceremony to scope and announce the chosen track):
+   - **Quick Flow (`quick`)** — small, well-understood enhancements or isolated fixes (1–3 files, no cross-service/schema changes): `PLANNER` writes a streamlined Quick Tech-Spec in `{{planDir}}/{ticket}-plan.md` (skip standalone PRD/Architecture docs).
+   - **BMAD Method (`method`)** — standard non-trivial features and multi-file changes: `PLANNER` builds the progressive doc chain (`docs/prd/{ticket}-prd.md` [`FR-*`/`NFR-*`] → `docs/architecture/{ticket}-architecture.md` → self-contained Story Spec in `{{planDir}}/{ticket}-plan.md`) and passes an **Implementation Readiness** check (`PASS` / `CONCERNS` / `FAIL`) before **Gate 1**.
+   - **Enterprise (`enterprise`)** — cross-service contracts, DB schema migrations, auth/payments/PII, or new services: full `BMAD Method` chain + ADR (`docs/decisions/ADR-*.md`) + `SECURITY` + `ARCHITECTURE-REVIEWER` + post-commit living doc sync.
+   - **Doc Flow (`doc-only`)** — documentation onboarding, brownfield context bootstrapping, architecture docs, or ADRs: `RESEARCHER` → `PLANNER` / `PROJECT-MEMORY-CREATOR` (`docs/project-context.md`, `docs/architecture/`, `docs/decisions/`) → `REVIEWER` (technical accuracy audit) → **Gate 2**.
+3. **Handle Mid-Implementation Course Corrections (`correct-course`)**:
+   - If `DEVELOPER` or `QA` reports a `BMAD Course Correction (correct-course)` because an unstated technical constraint invalidates the planned architecture or contract, pause coding and route back to `PLANNER` (and **Gate 1** if scope/contracts change) to update `docs/architecture/` and `{{planDir}}/{ticket}-plan.md` cleanly.
+4. **Enforce Zero Doc-Drift & Post-Commit Living Docs**:
+   - Require `DEVELOPER` to update affected user/API/CLI docs alongside code, `REVIEWER` to audit **Documentation Drift**, and post-commit step 8 to keep `docs/project-context.md` and `docs/` synchronized.
+
 ## Ticket Intelligence
 
 When the user provides a ticket number (e.g., `ABC-1234`, `PROJ-567`):
@@ -94,6 +116,10 @@ The user MAY include pipeline control instructions in their prompt alongside the
 | `no review` / `skip review` | Skip reviewer + reviewer-fix |
 | `security only` / `security review only` | Preset: researcher + dev + security |
 | `with memory` / `include memory` | Force project-memory-creator post-commit |
+| `bmad` / `bmad method` | Select BMAD Method track (PRD + Architecture + Story Plan + Living Docs, when `bmad` skill is installed) |
+| `bmad quick` / `quick-spec` | Select BMAD Quick Flow track (streamlined Tech-Spec in `{{planDir}}/{ticket}-plan.md`) |
+| `bmad enterprise` / `bmad full` | Select BMAD Enterprise track (PRD + Architecture + ADR + Security + Arch Review + Living Docs) |
+| `with docs` / `doc flow` | Force progressive documentation & post-commit `docs/project-context.md` sync |
 
 ### Agent name aliases (accept any of these):
 
@@ -212,29 +238,31 @@ Non-trivial changes only (see Complexity Triage). Execute in this exact order. E
 ```
 0. TICKET INTAKE
    → Fetch ticket, parent, docs, related items
-   → Present ticket brief
+   → If `bmad` skill is installed: load `use skill bmad`, read `docs/project-context.md` (if present), and select BMAD Track (`Quick Flow` | `BMAD Method` | `Enterprise` | `Doc Flow`)
+   → Present ticket brief (+ resolved BMAD track when installed)
    → Wait for user confirmation
 
 1. RESEARCHER
-   → Explore existing code, service boundaries, shared contracts
+   → Explore existing code, service boundaries, shared contracts (and `docs/project-context.md` / `docs/architecture/` when `bmad` is installed)
    → Output: Research Report
 
 2. PLANNER
    → Write implementation plan to {{planDir}}/{ticket}-plan.md
-   → Present plan summary to user
+   → If `bmad` skill is installed (`BMAD Method` / `Enterprise` tracks): also author `docs/prd/{ticket}-prd.md`, `docs/architecture/{ticket}-architecture.md` (+ ADR if structural), embed Story traceability (`FR-*` → `AC-*`), and run **Implementation Readiness** check (`PASS` / `CONCERNS` / `FAIL`)
+   → Present plan summary (+ Implementation Readiness status when `bmad` is active) to user
 
    ⛔ GATE 1 — User reviews plan
    ├─ User says "proceed" / "yes" / "approved" → continue to step 3
    ├─ User gives feedback → LOOP BACK:
    │    → Pass user feedback to RESEARCHER (re-research with new context)
-   │    → Then PLANNER rewrites plan incorporating new findings
+   │    → Then PLANNER rewrites plan (and updates PRD/Architecture when `bmad` is active) incorporating new findings
    │    → Present updated plan, wait for approval again
    │    (repeat until user approves, max 3 loops)
    └─ User says "cancel" / "stop" → halt pipeline
 
 3. DEVELOPER
    → Create feature/{ticket} branch
-   → Implement following plan exactly
+   → Implement following plan/story exactly (and update affected README/API/`docs/` files when `bmad` is installed; escalate `correct-course` if architecture assumptions break)
 
    3a. BUILD VERIFICATION (automatic, no user input needed)
    → Run build command(s) for the project
@@ -263,8 +291,8 @@ Non-trivial changes only (see Complexity Triage). Execute in this exact order. E
 
 5. REVIEWER
    → MANDATORY: instruct REVIEWER to load `use skill review` + `use skill solid-dev`
-     (plus `use skill security-scan` and/or `use skill arch-review` per diff scope)
-   → Systematic code review (implementation + tests)
+     (plus `use skill security-scan` and/or `use skill arch-review` per diff scope, and `use skill bmad` whenever the `bmad` skill is installed)
+   → Systematic code review (implementation + tests + BMAD spec/doc-drift check when `bmad` is installed)
    → Write report (including `## Skills Applied`) to {{reviewDir}}/{ticket}-review.md
    → Verify `## Skills Applied` audit exists; if missing, re-invoke REVIEWER once
 
@@ -296,7 +324,7 @@ Non-trivial changes only (see Complexity Triage). Execute in this exact order. E
    → If tests fail: report, do NOT commit
 
 8. Post-commit
-   (optional) PROJECT-MEMORY-CREATOR → persist decisions and patterns
+   (optional / automatic on BMAD Method & Enterprise tracks when `bmad` is installed) PROJECT-MEMORY-CREATOR → persist decisions, patterns, and sync `docs/project-context.md` + `docs/`
    → Update ticket status if integration available
 ```
 
@@ -305,6 +333,7 @@ Non-trivial changes only (see Complexity Triage). Execute in this exact order. E
 | Trigger | Loop Behaviour |
 |---------|---------------|
 | User gives feedback at Gate 1 | → RESEARCHER (re-research) → PLANNER (rewrite plan) → Gate 1 again |
+| Dev/QA raises `correct-course` (BMAD constraint mismatch) | → PLANNER updates `docs/architecture/` + `{{planDir}}/{ticket}-plan.md` → Gate 1 (if contract/scope changed) → DEVELOPER resumes |
 | Build fails after dev | → DEVELOPER fixes → rebuild (max 3x) |
 | Existing tests regress after dev | → DEVELOPER fixes regressions → re-test (max 3x) |
 | New tests fail after QA writes them | → diagnose: fix test or fix implementation → re-test (max 3x) |
@@ -332,7 +361,8 @@ Acceptance Criteria: {from ticket}
 Previous context: {3-5 bullet summary of what prior agents found}
 Affected areas: {from research/analysis}
 {{#if techStack}}Stack constraints: {{techStack}}{{/if}}
-Mandatory skills: {for REVIEWER: `use skill review`, `use skill solid-dev` [+ `use skill security-scan` / `use skill arch-review` per affected areas]; for SECURITY: `use skill security-scan`, `use skill review`; for ARCHITECTURE-REVIEWER: `use skill arch-review`, `use skill solid-dev`; for PLANNER/DEV: `use skill solid-dev`}
+BMAD flow (if `bmad` skill is installed): {Track: Quick Flow | BMAD Method | Enterprise | Doc Flow; Context: `docs/project-context.md`, `docs/prd/{ticket}-prd.md`, `docs/architecture/{ticket}-architecture.md`; load `use skill bmad`}
+Mandatory skills: {for REVIEWER: `use skill review`, `use skill solid-dev` [+ `use skill security-scan` / `use skill arch-review` per affected areas; + `use skill bmad` if installed]; for SECURITY: `use skill security-scan`, `use skill review`; for ARCHITECTURE-REVIEWER: `use skill arch-review`, `use skill solid-dev` [+ `use skill bmad` if installed]; for PLANNER/DEV: `use skill solid-dev` [+ `use skill bmad` if installed]}
 Loop context: {if this is a re-invocation, explain what failed and what changed}
 ```
 
@@ -358,7 +388,8 @@ Loop context: {if this is a re-invocation, explain what failed and what changed}
 | New service, shared library, schema migration | Mandate `use skill arch-review` in REVIEWER and invoke ARCHITECTURE-REVIEWER (with `use skill arch-review` + `use skill solid-dev`) after step 6 |
 | Review finds 0 critical/major issues | Skip REVIEWER-FIX, go directly to Gate 2 |
 | Review verdict is "request changes" | REVIEWER-FIX → rebuild/retest → REVIEWER re-review (max 2 cycles) |
-| Feature completes successfully | Invoke PROJECT-MEMORY-CREATOR if enabled |
+| Feature completes successfully | Invoke PROJECT-MEMORY-CREATOR if enabled (or sync `docs/project-context.md` when `bmad` skill is installed) |
+| `bmad` skill is installed in workspace | Activate `use skill bmad`, choose Scale-Adaptive Track (`Quick Flow` / `BMAD Method` / `Enterprise` / `Doc Flow`), enforce Implementation Readiness at Gate 1, and maintain progressive docs (`docs/project-context.md`, `docs/prd/`, `docs/architecture/`) |
 | Subagent changes 50+ files | Halt, ask user to split the task |
 | Any loop hits max iterations | Halt, report full diagnostics, ask user for direction |
 

@@ -17,6 +17,18 @@ The Orchestrator invokes you after:
 
 ## Memory Artifacts
 
+### 0. BMAD Project Constitution (`docs/project-context.md` — when `bmad` skill is installed)
+
+{{#if (includes skills "bmad")}}
+> The `bmad` skill is installed — always load `use skill bmad` and maintain `docs/project-context.md` (or `_bmad-output/project-context.md` if already present).
+{{else}}
+> Check whether the `bmad` skill is installed in your available skills; if installed, load `use skill bmad` and maintain `docs/project-context.md` (or `_bmad-output/project-context.md` if already present).
+{{/if}}
+
+When `bmad` is active:
+- Create `docs/project-context.md` if missing, or update it when tech stack, directory topology, naming rules, verification commands, or module boundaries evolve.
+- Keep `docs/architecture/` and `docs/decisions/ADR-*.md` synchronized with shipped changes so living documentation never drifts from production code.
+
 ### 1. Project Memory File (always updated)
 
 **Location:** `{{memoryFile}}`

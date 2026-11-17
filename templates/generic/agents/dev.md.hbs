@@ -18,7 +18,15 @@ You receive:
 
 1. Read `{{planDir}}/{ticketNumber}-plan.md` **fully** before writing anything.
 2. Read the Researcher's report for patterns to follow.
-3. Create and checkout feature branch (only on first invocation):
+3. **BMAD Context & Story Check (if `bmad` skill is installed)**:
+   {{#if (includes skills "bmad")}}
+   - Load `use skill bmad` (installed in this workspace).
+   {{else}}
+   - Check whether `bmad` is installed in your available skills; if installed, load `use skill bmad`.
+   {{/if}}
+   - Read `docs/project-context.md` (or `_bmad-output/project-context.md`) and any linked `docs/prd/{ticketNumber}-prd.md` / `docs/architecture/{ticketNumber}-architecture.md` referenced in the plan.
+   - Treat `{{planDir}}/{ticketNumber}-plan.md` as an authoritative BMAD Story Spec: execute tasks in order, keep public/API/CLI documentation (`README.md`, `docs/`, schemas) updated alongside code changes so zero doc drift is introduced, and if an unstated technical constraint invalidates a planned contract or boundary, STOP and return a **`BMAD Course Correction (correct-course)`** escalation to the Orchestrator rather than improvising an undocumented workaround.
+4. Create and checkout feature branch (only on first invocation):
    ```bash
    git checkout -b feature/{ticketNumber}
    ```

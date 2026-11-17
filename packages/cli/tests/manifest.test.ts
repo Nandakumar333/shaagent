@@ -198,6 +198,16 @@ describe('engine/manifest', () => {
       await expect(saveConfig(answers)).resolves.not.toThrow();
     });
 
+    it('should accept bmad as a valid skill', async () => {
+      const answers = {
+        ...mockAnswers,
+        skills: ['bmad'],
+      };
+      await expect(saveConfig(answers)).resolves.not.toThrow();
+      const loaded = await loadConfig();
+      expect((loaded as any).skills.installed).toContain('bmad');
+    });
+
     it('should accept ticket-analyser, har-analyzer, and telemetry-investigator as core agents', async () => {
       const answers = {
         ...mockAnswers,

@@ -101,6 +101,12 @@ shaagent/
 │   │   └── SKILL.md
 │   ├── tdd/
 │   │   └── SKILL.md
+│   ├── bmad/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── solid-dev/
+│   │   ├── SKILL.md
+│   │   └── references/
 │   ├── security-scan/
 │   │   └── SKILL.md
 │   ├── arch-review/
@@ -308,6 +314,7 @@ skills/<skill-name>/
 | `arch-review`   | Architecture fitness function evaluation                      |
 | `review`        | Systematic code review for distributed microservices          |
 | `solid-dev`     | Architecture alignment, naming conventions & SOLID principles |
+| `bmad`          | BMAD agile AI-driven development & progressive doc flow       |
 
 Skills install to the platform-correct path:
 
@@ -412,6 +419,7 @@ $ npx shaagent init
     ◉ graphify  (knowledge graph for your codebase)
     ◉ caveman   (simplify complex code)
     ◯ tdd       (test-driven development)
+    ◯ bmad      (BMAD agile development & doc flow)
 
   ✔ Agent files written
   ✔ Skills installed: review, solid-dev, security-scan, arch-review, graphify, caveman

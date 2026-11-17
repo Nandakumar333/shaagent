@@ -8,7 +8,7 @@ import path from "path";
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { getPlatformPaths } from "./platforms";
-import { loadConfig } from "./engine/manifest";
+import { addInstalledSkills, loadConfig } from "./engine/manifest";
 import { getSkillsRoot } from "./engine/paths";
 import {
   MANDATORY_SKILL_NAMES,
@@ -50,6 +50,13 @@ export function skillCommand(): Command {
 
       if (skillName) {
         await installSkill(skillName, platform, scope);
+        if (
+          config &&
+          validateSkillName(skillName) &&
+          (await fs.pathExists(path.join(getSkillsRoot(), skillName)))
+        ) {
+          await addInstalledSkills([skillName]);
+        }
         return;
       }
 
@@ -74,6 +81,9 @@ export function skillCommand(): Command {
       const skillsToInstall = resolveMandatorySkills(selectedOptional);
       for (const s of skillsToInstall) {
         await installSkill(s, platform, scope);
+      }
+      if (config) {
+        await addInstalledSkills(skillsToInstall);
       }
     });
 

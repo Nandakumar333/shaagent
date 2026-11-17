@@ -77,7 +77,11 @@ describe('prompts', () => {
       for (const mandatorySkill of MANDATORY_SKILL_NAMES) {
         expect(skillChoiceValues).not.toContain(mandatorySkill);
       }
-      expect(skillChoiceValues).toEqual(expect.arrayContaining(['graphify', 'caveman', 'tdd']));
+      expect(skillChoiceValues).toEqual(expect.arrayContaining(['graphify', 'caveman', 'tdd', 'bmad']));
+
+      const bmadChoice = skillsQ.choices.find((c: any) => c.value === 'bmad');
+      expect(bmadChoice).toBeDefined();
+      expect(bmadChoice.checked).toBe(false);
     });
 
     it('should auto-include all mandatory dev core agents and mandatory skills even when none selected in prompts', async () => {
@@ -408,12 +412,13 @@ describe('prompts', () => {
         'researcher',
         'debugger',
       ]);
-      expect(resolveMandatorySkills(['caveman', 'solid-dev'])).toEqual([
+      expect(resolveMandatorySkills(['caveman', 'solid-dev', 'bmad'])).toEqual([
         'review',
         'solid-dev',
         'security-scan',
         'arch-review',
         'caveman',
+        'bmad',
       ]);
     });
   });

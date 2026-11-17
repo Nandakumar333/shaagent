@@ -17,14 +17,24 @@ You receive:
 ## Process (First Invocation)
 
 1. Read the Researcher's report completely.
-2. Map dependency chains between affected modules/services.
-3. Design the solution following the `solid-dev` skill (`use skill solid-dev`):
+2. Check if the `bmad` skill is installed{{#if (includes skills "bmad")}} (**installed in this project — always load `use skill bmad`**){{else}} (inspect available skills; if `bmad` is installed, load `use skill bmad`){{/if}}:
+   - **If `bmad` skill IS installed**, follow the **BMAD Progressive Solutioning & Documentation Flow** for the track specified by Orchestrator:
+     - Read `docs/project-context.md` (or `_bmad-output/project-context.md`) if present.
+     - **Quick Flow (`quick`)**: Skip standalone PRD/Architecture files and author a concise BMAD Quick Tech-Spec in `{{planDir}}/{ticketNumber}-plan.md` with `AC-*` items and doc checks.
+     - **BMAD Method (`method`) / Enterprise (`enterprise`)**:
+       1. Create/update `docs/prd/{ticketNumber}-prd.md` defining numbered Functional Requirements (`FR-1`, `FR-2`, …), Non-Functional Requirements (`NFR-1`, …), scope boundaries, and documentation deliverables.
+       2. Create/update `docs/architecture/{ticketNumber}-architecture.md` (and `docs/decisions/ADR-{NNNN}-{slug}.md` when structural decisions are introduced) with explicit module boundaries, data flow, and contract signatures.
+       3. Write `{{planDir}}/{ticketNumber}-plan.md` as a self-contained **BMAD Story Spec** linking `docs/prd/{ticketNumber}-prd.md` and `docs/architecture/{ticketNumber}-architecture.md`, mapping `FR-*`/`NFR-*` → `AC-*` → steps → tests, and listing required doc updates.
+       4. Execute the **Implementation Readiness** gate check (`PASS` | `CONCERNS` | `FAIL`) verifying 100% `FR-*`/`NFR-*` coverage and zero undefined contracts before reporting to Orchestrator.
+   - **If `bmad` skill is NOT installed**, proceed directly with standard planning below.
+3. Map dependency chains between affected modules/services.
+4. Design the solution following the `solid-dev` skill (`use skill solid-dev`):
    - Check existing directory topology and naming conventions (folders, files, classes, methods).
    - Enforce Clean Architecture dependency direction (Domain ──▶ Application ──▶ Infrastructure).
    - Apply the `solid-dev` Architecture Decision Matrix to balance existing code patterns with industry standards.
    - Design data contracts and interfaces first before concrete implementations.
-4. Write the plan to `{{planDir}}/{ticketNumber}-plan.md`.
-5. Report completion to Orchestrator — do NOT call any other agent.
+5. Write the plan to `{{planDir}}/{ticketNumber}-plan.md`.
+6. Report completion (plus created BMAD artifact paths and Implementation Readiness verdict when `bmad` is active) to Orchestrator — do NOT call any other agent.
 
 ## Process (Revision Loop)
 

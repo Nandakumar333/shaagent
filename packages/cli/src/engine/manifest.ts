@@ -51,6 +51,7 @@ const VALID_SKILLS = [
   "security-scan",
   "arch-review",
   "solid-dev",
+  "bmad",
 ];
 
 export interface ConfigValidationError {
@@ -272,4 +273,35 @@ export async function loadConfig(): Promise<Record<string, unknown> | null> {
   }
 
   return config;
+}
+
+export async function addInstalledSkills(skillNames: string[]): Promise<void> {
+  const config = await loadConfig();
+  if (!config) return;
+
+  const validAdditions = skillNames.filter((s) => VALID_SKILLS.includes(s));
+  if (validAdditions.length === 0) return;
+
+  const skillsObj =
+    typeof config.skills === "object" && config.skills !== null
+      ? (config.skills as Record<string, unknown>)
+      : {};
+  const existing = Array.isArray(skillsObj.installed)
+    ? (skillsObj.installed as string[])
+    : [];
+
+  const merged = Array.from(new Set([...existing, ...validAdditions]));
+  const updatedConfig: Record<string, unknown> = {
+    ...config,
+    skills: {
+      ...skillsObj,
+      installed: merged,
+    },
+  };
+
+  const errors = validateConfig(updatedConfig);
+  if (errors.length > 0) return;
+
+  const configPath = path.join(process.cwd(), CONFIG_FILE);
+  await fs.writeJson(configPath, updatedConfig, { spaces: 2 });
 }

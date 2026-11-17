@@ -406,6 +406,15 @@ async function renderMergedFile(
     sections.push("");
   }
 
+  if (context.hasBmad) {
+    sections.push("## BMAD Development & Documentation Flow");
+    sections.push("");
+    sections.push(
+      "- **BMAD Skill Active (`use skill bmad`)**: Follow the BMAD scale-adaptive tracks (`Quick Flow`, `BMAD Method`, `Enterprise`) and progressive documentation chain (`docs/project-context.md` → `docs/prd/` → `docs/architecture/` → Story Plan → Implementation & Living Docs Sync).",
+    );
+    sections.push("");
+  }
+
   sections.push("## Agent Roles");
   sections.push("");
   sections.push(
@@ -492,6 +501,14 @@ function generateRootInstruction(
         "Start by reading the **ticket-analyser** agent instructions when working on customer tickets or incidents.",
       );
     }
+    if (context.hasBmad) {
+      lines.push("");
+      lines.push("## BMAD Development & Documentation Flow");
+      lines.push("");
+      lines.push(
+        "The **BMAD (`bmad`)** skill is installed. Activate `use skill bmad` to run scale-adaptive tracks (`Quick Flow`, `BMAD Method`, `Enterprise`) and maintain progressive documentation (`docs/project-context.md`, `docs/prd/`, `docs/architecture/`, `docs/decisions/`).",
+      );
+    }
   } else if (platform === "github-copilot") {
     lines.push(`# AGENTS.md — ${context.projectName}`);
     lines.push("");
@@ -547,6 +564,14 @@ function generateRootInstruction(
       }
       lines.push("");
     }
+    if (context.hasBmad) {
+      lines.push("## BMAD Development & Documentation Flow");
+      lines.push("");
+      lines.push(
+        "- **BMAD Skill Active (`use skill bmad`)**: Use scale-adaptive planning tracks (`Quick Flow`, `BMAD Method`, `Enterprise`), enforce the Implementation Readiness Gate before coding, and keep progressive documentation (`docs/project-context.md`, `docs/prd/`, `docs/architecture/`, `docs/decisions/`) synchronized with code.",
+      );
+      lines.push("");
+    }
     lines.push("## Agent Details");
     lines.push("");
     lines.push("See `.github/agents/` for detailed per-agent instructions.");
@@ -575,6 +600,14 @@ function generateRootInstruction(
     } else if (agents.includes("ticket-analyser")) {
       lines.push(
         "Start by reading the **ticket-analyser** agent instructions when working on customer tickets or incidents.",
+      );
+    }
+    if (context.hasBmad) {
+      lines.push("");
+      lines.push("## BMAD Development & Documentation Flow");
+      lines.push("");
+      lines.push(
+        "The **BMAD (`bmad`)** skill is installed. Load `use skill bmad` for scale-adaptive development tracks and progressive documentation (`docs/project-context.md`, `docs/prd/`, `docs/architecture/`, `docs/decisions/`).",
       );
     }
   }
@@ -615,6 +648,7 @@ function buildContext(answers: InitAnswers): Record<string, unknown> {
     allAgents: [...answers.coreAgents, ...answers.optionalAgents],
     skills: answers.skills,
     hasSkills: answers.skills.length > 0,
+    hasBmad: answers.skills.includes("bmad"),
     hasOptional: answers.optionalAgents.length > 0,
     datadog: answers.datadog,
     jira: answers.jira,

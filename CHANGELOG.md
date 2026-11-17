@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-11-17
+
 ### Added
+
+- **Built-in `bmad` Skill & Conditional BMAD Flow** — Added optional `bmad` skill (`skills/bmad/SKILL.md` + reference templates & track matrix) and conditional BMAD flow integration across Orchestrator, Researcher, Planner, Dev, QA, Reviewer, Architecture Reviewer, Project Memory Creator, and root instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`). When `bmad` is installed, agents activate scale-adaptive tracks (`Quick Flow`, `BMAD Method`, `Enterprise`, `Doc Flow`), progressive context artifacts (`docs/project-context.md`, `docs/prd/`, `docs/architecture/`), Implementation Readiness gating, `correct-course` escalation, and zero doc-drift checks; falls back to standard flow when absent.
+- **Manifest Skill Sync**: `shaagent skill install` now records newly installed built-in skills in `shaagent.config.json` when present.
+
+### Added (0.3.0–0.3.4)
 
 - **`TicketAnalyser` Primary AI Agent** — Dedicated primary agent for automated customer ticket triage, observability investigation, and verified Root Cause Analysis (RCA) generation.
   - **Gate 0 MCP Pre-Flight Verification**: Validates connections for Jira MCP, Datadog EU MCP or US Bearer token credentials, and GitLab MCP. Halts with actionable setup instructions if required dependencies are missing.
