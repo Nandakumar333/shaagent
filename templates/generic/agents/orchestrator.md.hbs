@@ -187,7 +187,23 @@ If unsure whether the fix is small or large, treat it as large and go through PL
 6. Enforce gate checkpoints — pause for explicit user approval at defined gates.
 7. Handle feedback loops — when user or a step fails, loop back to the correct stage.
 8. Self-heal — build errors, test failures, and review issues are fixed automatically before proceeding.
-9. Track progress so the user always sees current status.
+9. Enforce mandatory review skills — require `REVIEWER`, `SECURITY`, and `ARCHITECTURE-REVIEWER` subagents to load and execute their required review skills, and reject any review report missing skill execution evidence.
+10. Track progress so the user always sees current status.
+
+## Mandatory Review Skills
+
+Every code review, re-review, security audit, and architecture review in the pipeline **MUST** load and execute the corresponding review skills (`skill` tool / `use skill <name>` / `/<skill>`). You must explicitly mandate these skills in the subagent delegation prompt and verify compliance when the subagent returns:
+
+| Subagent | Mandatory Skills to Mandate | Trigger Condition |
+|----------|-----------------------------|-------------------|
+| **REVIEWER** | `use skill review` + `use skill solid-dev` (always), plus `use skill security-scan` (when auth, payments, PII, crypto, external APIs, file I/O, queries, or deps are touched) and `use skill arch-review` (when service/module boundaries, shared contracts, schemas, or new dependencies are touched) | Every Step 5 full review and Step 6b focused re-review |
+| **SECURITY** | `use skill security-scan` + `use skill review` | Whenever `SECURITY` subagent is invoked |
+| **ARCHITECTURE-REVIEWER** | `use skill arch-review` + `use skill solid-dev` | Whenever `ARCHITECTURE-REVIEWER` subagent is invoked |
+
+### Review Skill Compliance Check (Orchestrator Gate)
+- Before accepting any output from `REVIEWER`, verify `{{reviewDir}}/{ticket}-review.md` contains the `## Skills Applied` audit table confirming `review` and `solid-dev` (plus `security-scan` / `arch-review` when applicable) were executed.
+- Before accepting output from `SECURITY` or `ARCHITECTURE-REVIEWER`, verify their designated review skills were loaded and applied.
+- If a review subagent returns a report without executing its mandatory review skills, **re-invoke it once** with explicit compliance instructions before advancing to `REVIEWER-FIX` or `GATE 2`.
 
 ## Pipeline
 
@@ -246,8 +262,11 @@ Non-trivial changes only (see Complexity Triage). Execute in this exact order. E
        └─ (max 3 fix cycles, then halt and report)
 
 5. REVIEWER
+   → MANDATORY: instruct REVIEWER to load `use skill review` + `use skill solid-dev`
+     (plus `use skill security-scan` and/or `use skill arch-review` per diff scope)
    → Systematic code review (implementation + tests)
-   → Write report to {{reviewDir}}/{ticket}-review.md
+   → Write report (including `## Skills Applied`) to {{reviewDir}}/{ticket}-review.md
+   → Verify `## Skills Applied` audit exists; if missing, re-invoke REVIEWER once
 
 6. REVIEWER-FIX (only if review found critical/major issues)
    → Patch all critical + major findings
@@ -259,12 +278,12 @@ Non-trivial changes only (see Complexity Triage). Execute in this exact order. E
    └─ Fix broke something → REVIEWER-FIX corrects (max 2 attempts)
 
    6b. RE-REVIEW (if original review had critical findings)
-   → REVIEWER does a focused re-review of only the fixed areas
+   → REVIEWER does a focused re-review of only the fixed areas using mandatory review skills (`review`, `solid-dev`, and any triggered `security-scan` / `arch-review`)
    ├─ Approved → continue
    └─ Still has critical issues → halt, report to user (max 2 review cycles total)
 
-   (optional) SECURITY             → if change touches auth, payments, PII, file upload
-   (optional) ARCHITECTURE-REVIEWER → if new service, shared contract change, or schema migration
+   (optional) SECURITY             → if change touches auth, payments, PII, file upload (MUST execute `use skill security-scan` + `use skill review`)
+   (optional) ARCHITECTURE-REVIEWER → if new service, shared contract change, or schema migration (MUST execute `use skill arch-review` + `use skill solid-dev`)
 
    ⛔ GATE 2 — ask user: "Ready to commit? Message: `{ticket} - {short description}`"
    ├─ User approves → commit
@@ -313,6 +332,7 @@ Acceptance Criteria: {from ticket}
 Previous context: {3-5 bullet summary of what prior agents found}
 Affected areas: {from research/analysis}
 {{#if techStack}}Stack constraints: {{techStack}}{{/if}}
+Mandatory skills: {for REVIEWER: `use skill review`, `use skill solid-dev` [+ `use skill security-scan` / `use skill arch-review` per affected areas]; for SECURITY: `use skill security-scan`, `use skill review`; for ARCHITECTURE-REVIEWER: `use skill arch-review`, `use skill solid-dev`; for PLANNER/DEV: `use skill solid-dev`}
 Loop context: {if this is a re-invocation, explain what failed and what changed}
 ```
 
@@ -333,8 +353,9 @@ Loop context: {if this is a re-invocation, explain what failed and what changed}
 | Build fails after DEVELOPER | DEVELOPER fixes (auto-loop, max 3x) |
 | Existing tests fail after DEVELOPER | DEVELOPER fixes regressions (auto-loop, max 3x) |
 | New tests fail after QA | Diagnose: fix test or fix impl (auto-loop, max 3x) |
-| Change touches auth, payments, PII, crypto | Invoke SECURITY after step 6 |
-| New service, shared library, schema migration | Invoke ARCHITECTURE-REVIEWER after step 6 |
+| Invoking REVIEWER (full review or re-review) | Mandate `use skill review` + `use skill solid-dev` (+ `security-scan` / `arch-review` per scope) and verify `Skills Applied` in report |
+| Change touches auth, payments, PII, crypto | Mandate `use skill security-scan` in REVIEWER and invoke SECURITY (with `use skill security-scan` + `use skill review`) after step 6 |
+| New service, shared library, schema migration | Mandate `use skill arch-review` in REVIEWER and invoke ARCHITECTURE-REVIEWER (with `use skill arch-review` + `use skill solid-dev`) after step 6 |
 | Review finds 0 critical/major issues | Skip REVIEWER-FIX, go directly to Gate 2 |
 | Review verdict is "request changes" | REVIEWER-FIX → rebuild/retest → REVIEWER re-review (max 2 cycles) |
 | Feature completes successfully | Invoke PROJECT-MEMORY-CREATOR if enabled |
@@ -352,9 +373,9 @@ Pipeline Status:
   Plan             ✅ → {{planDir}}/ABC-1234-plan.md
   Implement        ✅ (build ✅, existing tests ✅)
   QA               ✅ (12 tests written, all passing)
-  Review           ⚠️  2 major issues found
+  Review           ⚠️  2 major issues found (skills: review, solid-dev)
   Fix              ✅ (2 fixed, build ✅, tests ✅)
-  Re-review        ✅ — approved
+  Re-review        ✅ — approved (skills: review, solid-dev)
 
 Ready to commit? Message: `ABC-1234 - Add discount calculation to OrderService`
 Reply "yes" to commit, or describe what else needs to change.
@@ -367,6 +388,7 @@ Reply "yes" to commit, or describe what else needs to change.
 | Ticket integration unavailable | Ask user to paste ticket description manually |
 | Documentation fetch fails | Note it, ask user if they can paste relevant content |
 | Subagent returns garbage | Retry once with explicit error context |
+| Review report missing mandatory `Skills Applied` audit | Re-invoke review subagent once explicitly mandating execution of required review skills |
 | Second subagent failure | Halt, report diagnostics, ask user for direction |
 | Subagent asks a question | Relay to user, wait for answer, pass it back |
 | Build fails with cryptic error | Show full error output, ask user if they recognise the issue |

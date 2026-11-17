@@ -78,10 +78,10 @@ web_modules/
 .next
 out
 
-# Nuxt.js build / generate output
+# Nuxt.js / TypeScript / Bundle build outputs
 .nuxt
-dist
-!packages/cli/dist
+dist/
+build/
 .output
 
 # Gatsby files
@@ -142,4 +142,33 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*~
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# AI Agent, ShaAgent runtime, & scratch artifacts
 .agents/
+.opencode/
+.claude/
+.codex/
+.cursor/
+.continue/
+.windsurf/
+.gemini/
+.ai/
+.github/plans/
+.github/reviews/
+.github/MEMORY.md
+.shaagent-repro/
+graphify-out/
+*.original.md
+results.sarif

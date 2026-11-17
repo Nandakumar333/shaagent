@@ -413,4 +413,37 @@ describe('engine/template — renderAgents', () => {
       expect(debuggerContent).toContain('Node.js & Mocha Repro');
     });
   });
+
+  describe('mandatory review skills enforcement', () => {
+    it('should mandate review skills in rendered reviewer agent', async () => {
+      const answers = makeAnswers('opencode');
+      await renderAgents(answers);
+
+      const reviewerPath = path.join(tempDir, '.opencode', 'agents', 'reviewer.md');
+      const reviewerContent = await fs.readFile(reviewerPath, 'utf-8');
+
+      expect(reviewerContent).toContain('Mandatory Review Skills');
+      expect(reviewerContent).toContain('use skill review');
+      expect(reviewerContent).toContain('use skill solid-dev');
+      expect(reviewerContent).toContain('use skill security-scan');
+      expect(reviewerContent).toContain('use skill arch-review');
+      expect(reviewerContent).toContain('## Skills Applied');
+    });
+
+    it('should mandate review skills delegation and verification in rendered orchestrator agent', async () => {
+      const answers = makeAnswers('opencode');
+      await renderAgents(answers);
+
+      const orchestratorPath = path.join(tempDir, '.opencode', 'agents', 'orchestrator.md');
+      const orchestratorContent = await fs.readFile(orchestratorPath, 'utf-8');
+
+      expect(orchestratorContent).toContain('Mandatory Review Skills');
+      expect(orchestratorContent).toContain('use skill review');
+      expect(orchestratorContent).toContain('use skill solid-dev');
+      expect(orchestratorContent).toContain('use skill security-scan');
+      expect(orchestratorContent).toContain('use skill arch-review');
+      expect(orchestratorContent).toContain('Mandatory skills:');
+      expect(orchestratorContent).toContain('Skills Applied');
+    });
+  });
 });
