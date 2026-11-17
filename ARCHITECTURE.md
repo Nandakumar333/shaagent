@@ -403,29 +403,18 @@ $ npx shaagent init
   ? Default model? (provider/model-id)
     > claude-sonnet-4
 
-  ? Select core agents to install: (all checked by default)
-    ◉ Orchestrator  (required)
-    ◉ Debugger
-    ◉ Researcher
-    ◉ Planner
-    ◉ Dev
-    ◉ QA
-    ◉ Reviewer
-    ◉ Reviewer-Fix
-
-  ? Select optional agents:
+  ? Select optional agents (mandatory core suite agents are auto-installed):
     ◯ Security Auditor
     ◯ Architecture Reviewer
     ◯ Project Memory Creator
 
-  ? Select skills to install:
+  ? Select optional skills to install (mandatory skills: review, solid-dev, security-scan, arch-review are auto-installed):
     ◉ graphify  (knowledge graph for your codebase)
     ◉ caveman   (simplify complex code)
     ◯ tdd       (test-driven development)
-    ◯ security-scan
 
   ✔ Agent files written
-  ✔ Skills installed: graphify, caveman
+  ✔ Skills installed: review, solid-dev, security-scan, arch-review, graphify, caveman
 
   ✅ Multi-agent setup complete!
      Agents written:

@@ -60,31 +60,27 @@ describe('prompts', () => {
       expect(result.scope).toBe('global');
     });
 
-    it('should always include orchestrator in coreAgents', async () => {
-      const inquirer = (await import('inquirer')).default;
-      (inquirer.prompt as any).mockResolvedValue({
-        platform: 'opencode',
-        scope: 'project',
-        projectName: 'test',
-        language: [],
-        framework: [],
-        infrastructure: '',
-        cicd: '',
-        model: '',
-        coreAgents: ['dev', 'qa'],
-        optionalAgents: [],
-        skills: [],
-      });
+    it('should not show core agent checkboxes and should only show optional skills in checkbox choices', async () => {
+      const { getQuestions, MANDATORY_SKILL_NAMES } = await import('../src/prompts');
+      const questions = getQuestions();
+      const questionNames = questions.map(q => q.name);
 
-      const { prompt } = await import('../src/prompts');
-      const result = await prompt('opencode', 'project');
+      expect(questionNames).not.toContain('devCoreAgents');
+      expect(questionNames).not.toContain('jiraCoreAgents');
+      expect(questionNames).not.toContain('bothCoreAgents');
+      expect(questionNames).not.toContain('coreAgents');
 
-      expect(result.coreAgents[0]).toBe('orchestrator');
-      expect(result.coreAgents).toContain('dev');
-      expect(result.coreAgents).toContain('qa');
+      const skillsQ = questions.find(q => q.name === 'skills') as any;
+      expect(skillsQ).toBeDefined();
+      const skillChoiceValues = skillsQ.choices.map((c: any) => c.value);
+
+      for (const mandatorySkill of MANDATORY_SKILL_NAMES) {
+        expect(skillChoiceValues).not.toContain(mandatorySkill);
+      }
+      expect(skillChoiceValues).toEqual(expect.arrayContaining(['graphify', 'caveman', 'tdd']));
     });
 
-    it('should not duplicate orchestrator if already selected', async () => {
+    it('should auto-include all mandatory dev core agents and mandatory skills even when none selected in prompts', async () => {
       const inquirer = (await import('inquirer')).default;
       (inquirer.prompt as any).mockResolvedValue({
         platform: 'opencode',
@@ -95,16 +91,58 @@ describe('prompts', () => {
         infrastructure: '',
         cicd: '',
         model: '',
-        coreAgents: ['orchestrator', 'dev'],
         optionalAgents: [],
         skills: [],
       });
 
       const { prompt } = await import('../src/prompts');
-      const result = await prompt('opencode', 'project');
+      const result = await prompt('opencode', 'project', 'development');
 
-      const orchestratorCount = result.coreAgents.filter(a => a === 'orchestrator').length;
-      expect(orchestratorCount).toBe(1);
+      expect(result.coreAgents).toEqual([
+        'orchestrator',
+        'debugger',
+        'researcher',
+        'planner',
+        'dev',
+        'qa',
+        'reviewer',
+        'reviewer-fix',
+      ]);
+      expect(result.skills).toEqual([
+        'review',
+        'solid-dev',
+        'security-scan',
+        'arch-review',
+      ]);
+    });
+
+    it('should merge selected optional skills without duplicating mandatory skills', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        platform: 'opencode',
+        scope: 'project',
+        projectName: 'test',
+        language: [],
+        framework: [],
+        infrastructure: '',
+        cicd: '',
+        model: '',
+        optionalAgents: ['security'],
+        skills: ['graphify', 'tdd', 'review'],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt('opencode', 'project', 'development');
+
+      expect(result.optionalAgents).toEqual(['security']);
+      expect(result.skills).toEqual([
+        'review',
+        'solid-dev',
+        'security-scan',
+        'arch-review',
+        'graphify',
+        'tdd',
+      ]);
     });
 
     it('should use platform default model when model is empty', async () => {
@@ -203,10 +241,19 @@ describe('prompts', () => {
       const result = await prompt('opencode', 'project', 'jira-analyser');
 
       expect(result.suite).toBe('jira-analyser');
-      expect(result.coreAgents[0]).toBe('ticket-analyser');
-      expect(result.coreAgents).toContain('har-analyzer');
-      expect(result.coreAgents).toContain('telemetry-investigator');
-      expect(result.coreAgents).not.toContain('orchestrator');
+      expect(result.coreAgents).toEqual([
+        'ticket-analyser',
+        'har-analyzer',
+        'telemetry-investigator',
+        'researcher',
+      ]);
+      expect(result.skills).toEqual([
+        'review',
+        'solid-dev',
+        'security-scan',
+        'arch-review',
+        'graphify',
+      ]);
       expect(result.jira).toEqual({
         url: 'https://test.atlassian.net',
         projectKey: 'OPS',
@@ -215,7 +262,33 @@ describe('prompts', () => {
       expect(result.gitlab?.projectId).toBe('my-group/project');
     });
 
-    it('should configure both orchestrator and ticket-analyser when both suite is selected', async () => {
+    it('should append optional debugger agent when selected in jira-analyser suite', async () => {
+      const inquirer = (await import('inquirer')).default;
+      (inquirer.prompt as any).mockResolvedValue({
+        scope: 'project',
+        suite: 'jira-analyser',
+        platform: 'opencode',
+        projectName: 'jira-debug-test',
+        jiraUrl: 'https://test.atlassian.net',
+        jiraProjectKey: 'OPS',
+        model: 'github-copilot/claude-sonnet-4.6',
+        jiraOptionalAgents: ['debugger'],
+        skills: [],
+      });
+
+      const { prompt } = await import('../src/prompts');
+      const result = await prompt('opencode', 'project', 'jira-analyser');
+
+      expect(result.coreAgents).toEqual([
+        'ticket-analyser',
+        'har-analyzer',
+        'telemetry-investigator',
+        'researcher',
+        'debugger',
+      ]);
+    });
+
+    it('should configure all mandatory agents and skills when both suite is selected', async () => {
       const inquirer = (await import('inquirer')).default;
       (inquirer.prompt as any).mockResolvedValue({
         scope: 'project',
@@ -229,7 +302,6 @@ describe('prompts', () => {
         jiraUrl: 'https://test.atlassian.net',
         jiraProjectKey: 'DEV',
         model: 'github-copilot/claude-sonnet-4.6',
-        bothCoreAgents: ['orchestrator', 'ticket-analyser', 'dev'],
         optionalAgents: [],
         skills: [],
       });
@@ -238,9 +310,25 @@ describe('prompts', () => {
       const result = await prompt('opencode', 'project', 'both');
 
       expect(result.suite).toBe('both');
-      expect(result.coreAgents).toContain('orchestrator');
-      expect(result.coreAgents).toContain('ticket-analyser');
-      expect(result.coreAgents).toContain('dev');
+      expect(result.coreAgents).toEqual([
+        'orchestrator',
+        'ticket-analyser',
+        'har-analyzer',
+        'telemetry-investigator',
+        'debugger',
+        'researcher',
+        'planner',
+        'dev',
+        'qa',
+        'reviewer',
+        'reviewer-fix',
+      ]);
+      expect(result.skills).toEqual([
+        'review',
+        'solid-dev',
+        'security-scan',
+        'arch-review',
+      ]);
     });
 
     it('should correctly evaluate when predicates and default values in getQuestions', async () => {
@@ -283,6 +371,50 @@ describe('prompts', () => {
       const frameworkValues = frameworkQ.choices.map((c: any) => c.value);
       expect(frameworkValues).toContain('nodejs');
       expect(frameworkValues).toContain('mocha');
+
+      // Verify optional agent question visibility per suite
+      const optionalQ = questions.find(q => q.name === 'optionalAgents') as any;
+      const jiraOptionalQ = questions.find(q => q.name === 'jiraOptionalAgents') as any;
+      expect(optionalQ.when({ suite: 'development' })).toBe(true);
+      expect(optionalQ.when({ suite: 'both' })).toBe(true);
+      expect(optionalQ.when({ suite: 'jira-analyser' })).toBe(false);
+      expect(jiraOptionalQ.when({ suite: 'jira-analyser' })).toBe(true);
+      expect(jiraOptionalQ.when({ suite: 'development' })).toBe(false);
+    });
+
+    it('resolveCoreAgents and resolveMandatorySkills enforce mandatory sets without duplicates', async () => {
+      const { resolveCoreAgents, resolveMandatorySkills } = await import('../src/prompts');
+
+      expect(resolveCoreAgents('development')).toEqual([
+        'orchestrator',
+        'debugger',
+        'researcher',
+        'planner',
+        'dev',
+        'qa',
+        'reviewer',
+        'reviewer-fix',
+      ]);
+      expect(resolveCoreAgents('jira-analyser')).toEqual([
+        'ticket-analyser',
+        'har-analyzer',
+        'telemetry-investigator',
+        'researcher',
+      ]);
+      expect(resolveCoreAgents('jira-analyser', ['debugger'])).toEqual([
+        'ticket-analyser',
+        'har-analyzer',
+        'telemetry-investigator',
+        'researcher',
+        'debugger',
+      ]);
+      expect(resolveMandatorySkills(['caveman', 'solid-dev'])).toEqual([
+        'review',
+        'solid-dev',
+        'security-scan',
+        'arch-review',
+        'caveman',
+      ]);
     });
   });
 });

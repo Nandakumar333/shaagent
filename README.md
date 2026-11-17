@@ -108,24 +108,24 @@ When neither flag is passed, `shaagent init` asks. Some platforms (GitHub Copilo
 
 ## Skills
 
-Skills are Markdown files that extend agent capabilities. They install to your
-platform's global skill directory.
+Skills are Markdown files that extend agent capabilities. Mandatory skills (`review`, `solid-dev`, `security-scan`, `arch-review`) are always installed automatically; optional skills can be toggled during setup or installed later.
 
-| Skill           | What it does                                       | Install path (OpenCode)                            |
-| --------------- | -------------------------------------------------- | -------------------------------------------------- |
-| `graphify`      | Codebase knowledge graph (service map, deps)       | `~/.config/opencode/skills/graphify/SKILL.md`      |
-| `caveman`       | Token compression + progressive simplification     | `~/.config/opencode/skills/caveman/SKILL.md`       |
-| `review`        | Systematic code review (.NET-focused)              | `~/.config/opencode/skills/review/SKILL.md`        |
-| `tdd`           | Red-Green-Refactor (xUnit/pytest/Vitest/Mocha)     | `~/.config/opencode/skills/tdd/SKILL.md`           |
-| `security-scan` | OWASP-aligned security audit for .NET              | `~/.config/opencode/skills/security-scan/SKILL.md` |
-| `arch-review`   | Architecture fitness functions (microservices)     | `~/.config/opencode/skills/arch-review/SKILL.md`   |
-| `solid-dev`     | Architecture alignment, naming conventions & SOLID | `~/.config/opencode/skills/solid-dev/SKILL.md`     |
+| Skill           | Requirement | What it does                                       | Install path (OpenCode)                            |
+| --------------- | ----------- | -------------------------------------------------- | -------------------------------------------------- |
+| `review`        | Mandatory   | Systematic code review (.NET-focused)              | `~/.config/opencode/skills/review/SKILL.md`        |
+| `solid-dev`     | Mandatory   | Architecture alignment, naming conventions & SOLID | `~/.config/opencode/skills/solid-dev/SKILL.md`     |
+| `security-scan` | Mandatory   | OWASP-aligned security audit for .NET              | `~/.config/opencode/skills/security-scan/SKILL.md` |
+| `arch-review`   | Mandatory   | Architecture fitness functions (microservices)     | `~/.config/opencode/skills/arch-review/SKILL.md`   |
+| `graphify`      | Optional    | Codebase knowledge graph (service map, deps)       | `~/.config/opencode/skills/graphify/SKILL.md`      |
+| `caveman`       | Optional    | Token compression + progressive simplification     | `~/.config/opencode/skills/caveman/SKILL.md`       |
+| `tdd`           | Optional    | Red-Green-Refactor (xUnit/pytest/Vitest/Mocha)     | `~/.config/opencode/skills/tdd/SKILL.md`           |
 
-Install a skill later:
+Install skills later:
 
 ```bash
-shaagent skill install tdd
-shaagent skill install security-scan --platform claude-code
+shaagent skill install                 # Interactive optional skill picker (auto-installs mandatory skills)
+shaagent skill install tdd             # Install a specific skill
+shaagent skill install tdd --platform claude-code
 ```
 
 ---

@@ -3,7 +3,13 @@
  */
 
 import { Command } from "commander";
-import { prompt, getDefaultModel } from "./prompts";
+import {
+  prompt,
+  getDefaultModel,
+  OPTIONAL_SKILLS,
+  resolveCoreAgents,
+  resolveMandatorySkills,
+} from "./prompts";
 import { renderAgents } from "./engine/template";
 import { installSkill } from "./install-skill";
 import { saveConfig } from "./engine/manifest";
@@ -62,9 +68,13 @@ export function initCommand(): Command {
           : undefined;
       const suiteFlag: Suite | undefined = opts.suite;
 
-      const answers = opts.yes
+      const rawAnswers = opts.yes
         ? getDefaults(opts.platform, scopeFlag, suiteFlag)
         : await prompt(opts.platform, scopeFlag, suiteFlag);
+      const answers: InitAnswers = {
+        ...rawAnswers,
+        skills: resolveMandatorySkills(rawAnswers.skills),
+      };
 
       const { note } = getPlatformPaths(answers.platform, answers.scope);
       if (note) {
@@ -153,6 +163,9 @@ export function getDefaults(
 ): InitAnswers {
   const chosenSuite: Suite = suite ?? "development";
   const chosenPlatform: Platform = (platform as Platform) ?? "opencode";
+  const defaultSkills = resolveMandatorySkills(
+    OPTIONAL_SKILLS.filter((s) => s.checked).map((s) => s.value),
+  );
 
   if (chosenSuite === "jira-analyser") {
     return {
@@ -165,14 +178,9 @@ export function getDefaults(
       infrastructure: "",
       cicd: "",
       model: getDefaultModel(chosenPlatform),
-      coreAgents: [
-        "ticket-analyser",
-        "har-analyzer",
-        "telemetry-investigator",
-        "researcher",
-      ],
+      coreAgents: resolveCoreAgents("jira-analyser"),
       optionalAgents: [],
-      skills: ["graphify", "caveman", "review"],
+      skills: defaultSkills,
       jira: {
         url: "https://your-domain.atlassian.net",
         projectKey: "PROJ",
@@ -198,21 +206,9 @@ export function getDefaults(
       infrastructure: "AWS + Kubernetes",
       cicd: "GitHub Actions",
       model: getDefaultModel(chosenPlatform),
-      coreAgents: [
-        "orchestrator",
-        "ticket-analyser",
-        "har-analyzer",
-        "telemetry-investigator",
-        "debugger",
-        "researcher",
-        "planner",
-        "dev",
-        "qa",
-        "reviewer",
-        "reviewer-fix",
-      ],
+      coreAgents: resolveCoreAgents("both"),
       optionalAgents: [],
-      skills: ["graphify", "caveman", "review"],
+      skills: defaultSkills,
       jira: {
         url: "https://your-domain.atlassian.net",
         projectKey: "PROJ",
@@ -237,17 +233,8 @@ export function getDefaults(
     infrastructure: "AWS + Kubernetes",
     cicd: "GitHub Actions",
     model: getDefaultModel(chosenPlatform),
-    coreAgents: [
-      "orchestrator",
-      "debugger",
-      "researcher",
-      "planner",
-      "dev",
-      "qa",
-      "reviewer",
-      "reviewer-fix",
-    ],
+    coreAgents: resolveCoreAgents("development"),
     optionalAgents: [],
-    skills: ["graphify", "caveman", "review"],
+    skills: defaultSkills,
   };
 }

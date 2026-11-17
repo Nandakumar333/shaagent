@@ -111,5 +111,81 @@ describe('install-skill', () => {
       const cmd = skillCommand();
       await cmd.parseAsync(['node', 'test', 'list']);
     });
+
+    it('prompts only for optional skills and auto-installs mandatory skills when skillName is omitted', async () => {
+      const tempDir = path.join(os.tmpdir(), `shaagent-skill-cmd-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      const originalCwd = process.cwd();
+      await fs.ensureDir(tempDir);
+      process.chdir(tempDir);
+
+      try {
+        const inquirer = (await import('inquirer')).default;
+        const promptSpy = (await import('vitest')).vi
+          .spyOn(inquirer, 'prompt')
+          .mockResolvedValueOnce({ skills: ['tdd'] } as any);
+
+        const { skillCommand } = await import('../src/install-skill');
+        const cmd = skillCommand();
+        await cmd.parseAsync(['node', 'test', 'install', '--platform', 'opencode']);
+
+        expect(promptSpy).toHaveBeenCalledTimes(1);
+        const promptedQuestions = promptSpy.mock.calls[0][0] as any[];
+        const choiceValues = promptedQuestions[0].choices.map((c: any) => c.value);
+        expect(choiceValues).not.toContain('review');
+        expect(choiceValues).not.toContain('solid-dev');
+        expect(choiceValues).not.toContain('security-scan');
+        expect(choiceValues).not.toContain('arch-review');
+        expect(choiceValues).toEqual(expect.arrayContaining(['graphify', 'caveman', 'tdd']));
+
+        for (const expectedSkill of ['review', 'solid-dev', 'security-scan', 'arch-review', 'tdd']) {
+          expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', expectedSkill, 'SKILL.md'))).toBe(true);
+        }
+
+        promptSpy.mockRestore();
+      } finally {
+        process.chdir(originalCwd);
+        await fs.remove(tempDir);
+      }
+    });
+
+    it('installs single named skill directly when skillName argument is provided', async () => {
+      const tempDir = path.join(os.tmpdir(), `shaagent-skill-single-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      const originalCwd = process.cwd();
+      await fs.ensureDir(tempDir);
+      process.chdir(tempDir);
+
+      try {
+        const { skillCommand } = await import('../src/install-skill');
+        const cmd = skillCommand();
+        await cmd.parseAsync(['node', 'test', 'install', 'tdd', '--platform', 'opencode']);
+
+        expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', 'tdd', 'SKILL.md'))).toBe(true);
+        expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', 'graphify', 'SKILL.md'))).toBe(false);
+      } finally {
+        process.chdir(originalCwd);
+        await fs.remove(tempDir);
+      }
+    });
+
+    it('installs mandatory and default optional skills with --yes when skillName is omitted', async () => {
+      const tempDir = path.join(os.tmpdir(), `shaagent-skill-yes-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      const originalCwd = process.cwd();
+      await fs.ensureDir(tempDir);
+      process.chdir(tempDir);
+
+      try {
+        const { skillCommand } = await import('../src/install-skill');
+        const cmd = skillCommand();
+        await cmd.parseAsync(['node', 'test', 'install', '--yes', '--platform', 'opencode']);
+
+        for (const expectedSkill of ['review', 'solid-dev', 'security-scan', 'arch-review', 'graphify', 'caveman']) {
+          expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', expectedSkill, 'SKILL.md'))).toBe(true);
+        }
+        expect(await fs.pathExists(path.join(tempDir, '.opencode', 'skills', 'tdd', 'SKILL.md'))).toBe(false);
+      } finally {
+        process.chdir(originalCwd);
+        await fs.remove(tempDir);
+      }
+    });
   });
 });

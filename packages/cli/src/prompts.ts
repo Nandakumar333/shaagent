@@ -60,7 +60,7 @@ export const SUITES = [
 
 export const DEV_CORE_AGENTS = [
   {
-    name: "Orchestrator  (required, always included)",
+    name: "Orchestrator  (mandatory, primary development agent)",
     value: "orchestrator",
     checked: true,
   },
@@ -75,7 +75,7 @@ export const DEV_CORE_AGENTS = [
 
 export const JIRA_CORE_AGENTS = [
   {
-    name: "Ticket Analyser        (required, primary triage & RCA agent)",
+    name: "Ticket Analyser        (mandatory, primary triage & RCA agent)",
     value: "ticket-analyser",
     checked: true,
   },
@@ -94,6 +94,9 @@ export const JIRA_CORE_AGENTS = [
     value: "researcher",
     checked: true,
   },
+];
+
+export const JIRA_OPTIONAL_AGENTS = [
   {
     name: "Debugger               (Reproduction script generation & verification)",
     value: "debugger",
@@ -103,12 +106,12 @@ export const JIRA_CORE_AGENTS = [
 
 export const BOTH_CORE_AGENTS = [
   {
-    name: "Orchestrator           (required, always included for development)",
+    name: "Orchestrator           (mandatory, primary development agent)",
     value: "orchestrator",
     checked: true,
   },
   {
-    name: "Ticket Analyser        (required, primary triage & RCA agent)",
+    name: "Ticket Analyser        (mandatory, primary triage & RCA agent)",
     value: "ticket-analyser",
     checked: true,
   },
@@ -145,7 +148,32 @@ export const OPTIONAL_AGENTS = [
   },
 ];
 
-export const SKILLS = [
+export const MANDATORY_SKILLS = [
+  {
+    name: "review        — systematic code review checklist (.NET-focused)",
+    value: "review",
+    checked: true,
+  },
+  {
+    name: "solid-dev     — architecture alignment, naming conventions & SOLID principles",
+    value: "solid-dev",
+    checked: true,
+  },
+  {
+    name: "security-scan — OWASP-aligned security audit for .NET",
+    value: "security-scan",
+    checked: true,
+  },
+  {
+    name: "arch-review   — architecture fitness functions for microservices",
+    value: "arch-review",
+    checked: true,
+  },
+];
+
+export const MANDATORY_SKILL_NAMES = MANDATORY_SKILLS.map((s) => s.value);
+
+export const OPTIONAL_SKILLS = [
   {
     name: "graphify      — codebase knowledge graph (service map, dependencies)",
     value: "graphify",
@@ -157,31 +185,39 @@ export const SKILLS = [
     checked: true,
   },
   {
-    name: "review        — systematic code review checklist (.NET-focused)",
-    value: "review",
-    checked: true,
-  },
-  {
     name: "tdd           — Red-Green-Refactor TDD cycle (xUnit/pytest/Vitest/Mocha)",
     value: "tdd",
     checked: false,
   },
-  {
-    name: "security-scan — OWASP-aligned security audit for .NET",
-    value: "security-scan",
-    checked: false,
-  },
-  {
-    name: "arch-review   — architecture fitness functions for microservices",
-    value: "arch-review",
-    checked: false,
-  },
-  {
-    name: "solid-dev     — architecture alignment, naming conventions & SOLID principles",
-    value: "solid-dev",
-    checked: false,
-  },
 ];
+
+export const SKILLS = [...MANDATORY_SKILLS, ...OPTIONAL_SKILLS];
+
+export function resolveCoreAgents(
+  suite: Suite,
+  jiraOptionalAgents: string[] = [],
+): string[] {
+  if (suite === "jira-analyser") {
+    const core = JIRA_CORE_AGENTS.map((a) => a.value);
+    const extra = jiraOptionalAgents.filter(
+      (a) => a === "debugger" && !core.includes(a),
+    );
+    return [...core, ...extra];
+  }
+  if (suite === "both") {
+    return BOTH_CORE_AGENTS.map((a) => a.value);
+  }
+  return DEV_CORE_AGENTS.map((a) => a.value);
+}
+
+export function resolveMandatorySkills(
+  selectedSkills: string[] = [],
+): string[] {
+  const optionalSelected = selectedSkills.filter(
+    (s) => !MANDATORY_SKILL_NAMES.includes(s),
+  );
+  return [...MANDATORY_SKILL_NAMES, ...optionalSelected];
+}
 
 export function getQuestions(
   platformFlag?: string,
@@ -323,41 +359,29 @@ export function getQuestions(
       message: "Default model? (provider/model-id)",
       default: (ans: any) => getDefaultModel(platformFlag ?? ans?.platform),
     },
-    // Agents selection based on chosen suite
-    {
-      type: "checkbox",
-      name: "devCoreAgents",
-      message: "Select core development agents to install:",
-      choices: DEV_CORE_AGENTS,
-      when: (ans: any) =>
-        (ans?.suite ?? suiteFlag ?? "development") === "development",
-    },
-    {
-      type: "checkbox",
-      name: "jiraCoreAgents",
-      message: "Select Jira Analyser agents to install:",
-      choices: JIRA_CORE_AGENTS,
-      when: (ans: any) => (ans?.suite ?? suiteFlag) === "jira-analyser",
-    },
-    {
-      type: "checkbox",
-      name: "bothCoreAgents",
-      message: "Select core agents to install:",
-      choices: BOTH_CORE_AGENTS,
-      when: (ans: any) => (ans?.suite ?? suiteFlag) === "both",
-    },
+    // Optional agents & skills selection (mandatory core agents and mandatory skills are auto-installed)
     {
       type: "checkbox",
       name: "optionalAgents",
-      message: "Select optional agents:",
+      message:
+        "Select optional agents (mandatory core suite agents are auto-installed):",
       choices: OPTIONAL_AGENTS,
       when: (ans: any) => (ans?.suite ?? suiteFlag) !== "jira-analyser",
     },
     {
       type: "checkbox",
+      name: "jiraOptionalAgents",
+      message:
+        "Select optional agents (mandatory Jira Analyser core agents are auto-installed):",
+      choices: JIRA_OPTIONAL_AGENTS,
+      when: (ans: any) => (ans?.suite ?? suiteFlag) === "jira-analyser",
+    },
+    {
+      type: "checkbox",
       name: "skills",
-      message: "Select skills to install:",
-      choices: SKILLS,
+      message:
+        "Select optional skills to install (mandatory skills: review, solid-dev, security-scan, arch-review are auto-installed):",
+      choices: OPTIONAL_SKILLS,
     },
   ];
 }
@@ -376,40 +400,13 @@ export async function prompt(
     answers.suite ??
     "development") as Suite;
 
-  // Resolve coreAgents based on suite choice
-  let coreAgents: string[] = [];
-  if (selectedSuite === "development") {
-    const rawDev =
-      answers.devCoreAgents ??
-      answers.coreAgents ??
-      DEV_CORE_AGENTS.map((a) => a.value);
-    coreAgents = [
-      "orchestrator",
-      ...rawDev.filter((a: string) => a !== "orchestrator"),
-    ];
-  } else if (selectedSuite === "jira-analyser") {
-    const rawJira =
-      answers.jiraCoreAgents ??
-      answers.coreAgents ??
-      JIRA_CORE_AGENTS.filter((a) => a.checked).map((a) => a.value);
-    coreAgents = [
-      "ticket-analyser",
-      ...rawJira.filter((a: string) => a !== "ticket-analyser"),
-    ];
-  } else {
-    // 'both'
-    const rawBoth =
-      answers.bothCoreAgents ??
-      answers.coreAgents ??
-      BOTH_CORE_AGENTS.map((a) => a.value);
-    coreAgents = [
-      "orchestrator",
-      "ticket-analyser",
-      ...rawBoth.filter(
-        (a: string) => a !== "orchestrator" && a !== "ticket-analyser",
-      ),
-    ];
-  }
+  // Mandatory suite core agents are always included; cannot be unselected
+  const coreAgents = resolveCoreAgents(
+    selectedSuite,
+    answers.jiraOptionalAgents ?? [],
+  );
+  // Mandatory skills are always included; merge with any selected optional skills
+  const skills = resolveMandatorySkills(answers.skills ?? []);
 
   // Construct datadog, jira, gitlab objects if applicable
   const hasDatadog = Boolean(
@@ -465,7 +462,7 @@ export async function prompt(
     model: answers.model || getDefaultModel(selectedPlatform),
     coreAgents,
     optionalAgents: answers.optionalAgents ?? [],
-    skills: answers.skills ?? [],
+    skills,
     datadog,
     jira,
     gitlab,

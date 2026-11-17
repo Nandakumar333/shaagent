@@ -6,22 +6,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { initCommand } from '../src/init';
 
 // Mock dependencies
-vi.mock('../src/prompts', () => ({
-  prompt: vi.fn().mockResolvedValue({
-    platform: 'opencode',
-    scope: 'project',
-    projectName: 'test-project',
-    language: ['typescript'],
-    framework: ['react'],
-    infrastructure: 'AWS',
-    cicd: 'GitHub Actions',
-    model: 'github-copilot/claude-sonnet-4.6',
-    coreAgents: ['orchestrator', 'dev'],
-    optionalAgents: [],
-    skills: [],
-  }),
-  getDefaultModel: vi.fn().mockReturnValue('github-copilot/claude-sonnet-4.6'),
-}));
+vi.mock('../src/prompts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/prompts')>();
+  return {
+    ...actual,
+    prompt: vi.fn().mockResolvedValue({
+      platform: 'opencode',
+      scope: 'project',
+      projectName: 'test-project',
+      language: ['typescript'],
+      framework: ['react'],
+      infrastructure: 'AWS',
+      cicd: 'GitHub Actions',
+      model: 'github-copilot/claude-sonnet-4.6',
+      coreAgents: ['orchestrator', 'dev'],
+      optionalAgents: [],
+      skills: [],
+    }),
+    getDefaultModel: vi.fn().mockReturnValue('github-copilot/claude-sonnet-4.6'),
+  };
+});
 
 vi.mock('../src/engine/template', () => ({
   renderAgents: vi.fn().mockResolvedValue(['file1.md', 'file2.md']),
@@ -219,23 +223,58 @@ describe('init', () => {
   });
 
   describe('getDefaults direct tests', () => {
-    it('returns expected defaults for each suite', async () => {
+    it('returns expected defaults including all mandatory agents and mandatory skills for each suite', async () => {
       const { getDefaults } = await import('../src/init');
+      const mandatorySkills = ['review', 'solid-dev', 'security-scan', 'arch-review'];
 
       const dev = getDefaults('opencode', 'project', 'development');
       expect(dev.suite).toBe('development');
-      expect(dev.coreAgents).toContain('orchestrator');
+      expect(dev.coreAgents).toEqual([
+        'orchestrator',
+        'debugger',
+        'researcher',
+        'planner',
+        'dev',
+        'qa',
+        'reviewer',
+        'reviewer-fix',
+      ]);
+      expect(dev.skills).toEqual(expect.arrayContaining([...mandatorySkills, 'graphify', 'caveman']));
 
       const jira = getDefaults('cursor', 'global', 'jira-analyser');
       expect(jira.suite).toBe('jira-analyser');
       expect(jira.platform).toBe('cursor');
       expect(jira.scope).toBe('global');
-      expect(jira.coreAgents[0]).toBe('ticket-analyser');
+      expect(jira.coreAgents).toEqual([
+        'ticket-analyser',
+        'har-analyzer',
+        'telemetry-investigator',
+        'researcher',
+      ]);
+      expect(jira.skills).toEqual(expect.arrayContaining([...mandatorySkills, 'graphify', 'caveman']));
 
       const both = getDefaults('claude-code', 'project', 'both');
       expect(both.suite).toBe('both');
       expect(both.coreAgents).toContain('orchestrator');
       expect(both.coreAgents).toContain('ticket-analyser');
+      expect(both.skills).toEqual(expect.arrayContaining([...mandatorySkills, 'graphify', 'caveman']));
+    });
+
+    it('always installs mandatory skills even if prompt returns empty skills array', async () => {
+      const { installSkill } = await import('../src/install-skill');
+      const { saveConfig } = await import('../src/engine/manifest');
+
+      const cmd = initCommand();
+      await cmd.parseAsync(['node', 'test']);
+
+      for (const skill of ['review', 'solid-dev', 'security-scan', 'arch-review']) {
+        expect(installSkill).toHaveBeenCalledWith(skill, 'opencode', 'project');
+      }
+      expect(saveConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skills: expect.arrayContaining(['review', 'solid-dev', 'security-scan', 'arch-review']),
+        }),
+      );
     });
   });
 });
